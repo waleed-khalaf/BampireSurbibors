@@ -27,6 +27,25 @@ func _read_state(capture_folder: String) -> String:
 	return FileAccess.get_file_as_string(capture_folder.path_join("state.txt"))
 
 
+func test_a_started_service_tells_godot_to_ignore_its_capture_folder() -> void:
+	_service()
+
+	# Without this marker the editor imports every screenshot as a texture.
+	assert_bool(FileAccess.file_exists(_folder.path_join(".gdignore"))).is_true()
+
+
+func test_a_capture_puts_the_ignore_marker_back_after_the_folder_was_deleted() -> void:
+	var service: Node = _service()
+	var marker: String = _folder.path_join(".gdignore")
+	DirAccess.remove_absolute(marker)
+	DirAccess.remove_absolute(_folder)
+	assert_bool(DirAccess.dir_exists_absolute(_folder)).is_false()
+
+	service.capture("f12")
+
+	assert_bool(FileAccess.file_exists(marker)).is_true()
+
+
 func test_a_snapshot_is_a_folder_named_by_date_time_and_reason() -> void:
 	var folder: String = _service().capture("Run ended")
 

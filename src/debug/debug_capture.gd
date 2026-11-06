@@ -49,6 +49,7 @@ func _ready() -> void:
 		return
 	if root_folder.is_empty():
 		root_folder = _default_root_folder()
+	_prepare_root_folder()
 	_log = CaptureLog.new(LOG_ENTRIES)
 	OS.add_logger(_log)
 	if rolling_enabled and _has_window():
@@ -95,6 +96,9 @@ func unregister_provider(section: String) -> void:
 func capture(reason: String) -> String:
 	if not is_active():
 		return ""
+	# Again, not only at start-up: the folder may have been deleted since.
+	if not _prepare_root_folder():
+		return ""
 	var folder_name: String = "%s_%s" % [CaptureFiles.timestamp_name(Time.get_datetime_dict_from_system()), CaptureFiles.slug(reason)]
 	var folder: String = CaptureFiles.unused_path(root_folder.path_join(folder_name))
 	var error: Error = DirAccess.make_dir_recursive_absolute(folder)
@@ -120,6 +124,8 @@ func _start_rolling() -> void:
 
 
 func _save_rolling_screenshot() -> void:
+	if not _prepare_root_folder():
+		return
 	var folder: String = root_folder.path_join("rolling")
 	DirAccess.make_dir_recursive_absolute(folder)
 	var file_name: String = CaptureFiles.timestamp_name(Time.get_datetime_dict_from_system()) + ".png"
@@ -209,6 +215,23 @@ static func _write_text(path: String, text: String) -> void:
 		push_error("Debug capture: could not write %s (%s)." % [path, error_string(FileAccess.get_open_error())])
 		return
 	file.store_string(text)
+
+
+## Creates the capture folder if needed and puts an empty .gdignore in it.
+## The default folder sits inside the project, and the Godot editor imports
+## every PNG it finds there as a texture (adding .png.import files that the
+## rolling clean-up never deletes). .gitignore means nothing to that scan;
+## a .gdignore file makes the editor skip the folder entirely. Returns false
+## (after reporting the error) when the folder could not be created.
+func _prepare_root_folder() -> bool:
+	var error: Error = DirAccess.make_dir_recursive_absolute(root_folder)
+	if error != OK:
+		push_error("Debug capture: could not create %s (%s)." % [root_folder, error_string(error)])
+		return false
+	var marker: String = root_folder.path_join(".gdignore")
+	if not FileAccess.file_exists(marker):
+		_write_text(marker, "")
+	return true
 
 
 static func _default_root_folder() -> String:
