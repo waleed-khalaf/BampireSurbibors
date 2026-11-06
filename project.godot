@@ -17,6 +17,7 @@ config/features=PackedStringArray("4.7", "GL Compatibility")
 [autoload]
 
 FullscreenToggle="*res://src/view/fullscreen_toggle.gd"
+DebugCapture="*res://src/debug/debug_capture.gd"
 
 [display]
 

@@ -9,6 +9,7 @@ extends Node2D
 const MAX_STEPS_PER_FRAME: int = 5
 
 var _run: Run
+var _rng_seed: int
 ## Real time received from the engine that hasn't been simulated yet.
 var _accumulator: float = 0.0
 ## The latest snapshot, and Shireen's position one step before it. Drawing
@@ -32,14 +33,30 @@ func _ready() -> void:
 
 	var play_area: Vector2 = _read_play_area()
 	# Each run gets a fresh random seed. The seed is what makes a run
-	# reproducible, so later the debug capture will record it.
-	var rng_seed: int = randi()
-	_run = Run.new(RunConfig.new(content, rng_seed, play_area))
+	# reproducible, so the debug capture records it.
+	_rng_seed = randi()
+	_run = Run.new(RunConfig.new(content, _rng_seed, play_area))
 	_snapshot = _run.snapshot()
 	_previous_position = _snapshot.shireen_position
 	_sand.view_size = play_area
 	_props.view_size = play_area
+	DebugCapture.register_provider("Run", _debug_state)
 	_render(0.0)
+
+
+func _exit_tree() -> void:
+	DebugCapture.unregister_provider("Run")
+
+
+## The Run's state for state.txt (see src/debug/debug_capture.gd). It reads
+## the latest snapshot, so it shows exactly what was on screen.
+func _debug_state() -> Dictionary:
+	var state: Dictionary = {
+		"run_time": format_run_time(_snapshot.time),
+		"seed": _rng_seed,
+	}
+	state.merge(_snapshot.to_dict())
+	return state
 
 
 func _process(delta: float) -> void:
