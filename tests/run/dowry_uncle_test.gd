@@ -2,19 +2,38 @@ extends GdUnitTestSuite
 ## Dowry Uncles arriving and chasing Shireen, checked through the Run seam
 ## (ADR-0001): build a Run, step it, look at the snapshot.
 
-## Calibrated once on the user's machine (2026-11-06, Godot 4.7.2 headless,
-## run_tests.cmd): a step with 300 Uncles packed around Shireen took about
-## 850 µs on average (MEASURED_STEP_USEC). The budget allows about 3× that for
-## noisy runs and is 15% of a 60 Hz frame (16,667 µs), leaving the rest for
-## weapons, pickups and drawing. The test prints the time it measured; if it
-## fails, find out what got slower before raising the budget.
-const MEASURED_STEP_USEC: float = 850.0
-const STEP_BUDGET_USEC: float = 2500.0
+## Calibrated on the user's machine (2026-11-06, Godot 4.7.2 headless via
+## run_tests.cmd). The timing tests measure what the view pays every frame: a
+## step plus the snapshot after it (RunView), since the snapshot copies every
+## admirer. With 300 Uncles packed around Shireen that pair took 1,030–1,230 µs
+## over a dozen runs, most of them near 1,080 (about 760 for the step and 320
+## for the snapshot), with one spike to 1,840 while the machine was busy; the
+## strung-out crowd below took 1,005–1,230 µs. MEASURED_STEP_USEC is the
+## typical value. The budget allows about 3× that for noisy runs and is 20% of
+## a 60 Hz frame (16,667 µs), leaving the rest for weapons, pickups and
+## drawing. The tests print the time they measured; if one fails, find out
+## what got slower before raising the budget.
+const MEASURED_STEP_USEC: float = 1100.0
+const STEP_BUDGET_USEC: float = 3300.0
 
 
 func _stand(run: Run, ticks: int) -> void:
 	for i: int in ticks:
 		run.step(Run.TIMESTEP, Vector2.ZERO)
+
+
+## Times [param steps] steps the way the view takes them (RunView): a step,
+## then a snapshot, every tick. The pair is measured rather than the step
+## alone because the snapshot copies every admirer and the game pays for it
+## every frame. Shireen walks the [param directions] in turn, a second each.
+## Returns the average per tick in microseconds.
+func _average_usec_per_step_and_snapshot(run: Run, steps: int, directions: Array[Vector2]) -> float:
+	var started: int = Time.get_ticks_usec()
+	for i: int in steps:
+		@warning_ignore("integer_division")
+		run.step(Run.TIMESTEP, directions[(i / Run.STEPS_PER_SECOND) % directions.size()])
+		run.snapshot()
+	return float(Time.get_ticks_usec() - started) / steps
 
 
 ## The visible screen while the camera sits on Shireen.
@@ -30,10 +49,13 @@ func _distance_outside(rect: Rect2, point: Vector2) -> float:
 
 
 func test_uncles_spawn_off_screen_while_shireen_walks_around() -> void:
-	var run := Run.new(RunConfig.new(TestContent.steady_uncles(10.0), 7))
+	var content := TestContent.steady_uncles(10.0)
+	var run := Run.new(RunConfig.new(content, 7))
 	var directions: Array[Vector2] = [Vector2.RIGHT, Vector2(1, 1), Vector2.UP, Vector2.ZERO, Vector2.LEFT]
 	var seen: Dictionary[int, bool] = {}
-	var margin: float = TestContent.real().spawn_ramp.spawn_margin
+	# The margin of the ramp this Run was built with, not the real
+	# content/spawn_ramp.tres: tuning that file must not fail this test.
+	var margin: float = content.spawn_ramp.spawn_margin
 
 	for i: int in 20 * Run.STEPS_PER_SECOND:
 		@warning_ignore("integer_division")
@@ -146,8 +168,10 @@ func test_a_dense_crowd_spreads_out_instead_of_stacking() -> void:
 	var shireen_radius: float = TestContent.real().shireen.body_radius
 	var closest: float = INF
 	for i: int in admirers.size():
-		# Nobody stands on Shireen: at most a pixel into her body.
-		assert_float(admirers[i].position.length()).is_greater(shireen_radius + radius - 1.0)
+		# Nobody stands on Shireen. The keep-out is the last thing done to each
+		# admirer in a step, so everyone ends it on or outside her edge; the
+		# 0.001 only covers float rounding.
+		assert_float(admirers[i].position.length()).is_greater_equal(shireen_radius + radius - 0.001)
 		for j: int in range(i + 1, admirers.size()):
 			closest = minf(closest, admirers[i].position.distance_to(admirers[j].position))
 	# Two Uncles touch when 14 px apart. In the crush, nobody overlaps
@@ -168,15 +192,10 @@ func test_three_hundred_uncles_step_within_the_time_budget() -> void:
 	_stand(run, 15 * Run.STEPS_PER_SECOND)
 	assert_int(run.snapshot().admirer_count).is_equal(300)
 
-	const MEASURED_STEPS: int = 300
 	var directions: Array[Vector2] = [Vector2.RIGHT, Vector2.DOWN, Vector2.LEFT, Vector2.UP]
-	var started: int = Time.get_ticks_usec()
-	for i: int in MEASURED_STEPS:
-		@warning_ignore("integer_division")
-		run.step(Run.TIMESTEP, directions[(i / 60) % directions.size()])
-	var average_usec: float = float(Time.get_ticks_usec() - started) / MEASURED_STEPS
+	var average_usec: float = _average_usec_per_step_and_snapshot(run, 300, directions)
 
-	print("300 admirers: %.0f µs per step (calibrated at %.0f, budget %.0f)" % [average_usec, MEASURED_STEP_USEC, STEP_BUDGET_USEC])
+	print("300 admirers: %.0f µs per step and snapshot (calibrated at %.0f, budget %.0f)" % [average_usec, MEASURED_STEP_USEC, STEP_BUDGET_USEC])
 	assert_float(average_usec).is_less(STEP_BUDGET_USEC)
 
 
@@ -218,12 +237,9 @@ func test_a_strung_out_crowd_pressing_in_steps_within_the_time_budget() -> void:
 	assert_int(packed).is_greater(150)
 	assert_float(farthest).is_greater(8000.0)
 
-	const MEASURED_STEPS: int = 120
-	var started: int = Time.get_ticks_usec()
-	_stand(run, MEASURED_STEPS)
-	var average_usec: float = float(Time.get_ticks_usec() - started) / MEASURED_STEPS
+	var average_usec: float = _average_usec_per_step_and_snapshot(run, 120, [Vector2.ZERO])
 
-	print("strung-out crowd, %d packed, stragglers %.0f px behind: %.0f µs per step (budget %.0f)" % [packed, farthest, average_usec, STEP_BUDGET_USEC])
+	print("strung-out crowd, %d packed, stragglers %.0f px behind: %.0f µs per step and snapshot (budget %.0f)" % [packed, farthest, average_usec, STEP_BUDGET_USEC])
 	assert_float(average_usec).is_less(STEP_BUDGET_USEC)
 
 
