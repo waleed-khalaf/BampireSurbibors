@@ -1,6 +1,6 @@
 # Habibi, Get Closer
 
-A silly survivors-like made in Godot 4.7. Shireen, an Egyptian belly dancer, dazzles a desert full of over-the-top admirers. The design is in [docs/design.md](docs/design.md), the vocabulary in [GLOSSARY.md](GLOSSARY.md) and the work items in [.scratch/demo/](.scratch/demo/).
+A silly survivors-like made in Godot 4.7. Shireen, an Egyptian belly dancer, dazzles a desert full of over-the-top admirers. The design is in [docs/design.md](docs/design.md), the vocabulary in [GLOSSARY.md](GLOSSARY.md), the demo spec in [docs/demo-spec.md](docs/demo-spec.md) and the work items in [GitHub Issues](https://github.com/waleed-khalaf/BampireSurbibors/issues).
 
 ## Open the project
 

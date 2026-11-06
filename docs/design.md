@@ -254,7 +254,7 @@ Auto-aim targets the nearest admirer, except the Cane, which uses the facing dir
 ### Workflow
 - Claude writes the scripts and scenes. The user plays with **F5** and gives feedback.
 - A git repo with one commit per working feature, pushed to GitHub (`waleed-khalaf/BampireSurbibors`).
-- Work items live under `.scratch/` (see `docs/agents/issue-tracker.md`). The full demo spec is `.scratch/demo/spec.md`.
+- Work items live in GitHub Issues (see `docs/agents/issue-tracker.md`). The full demo spec is `docs/demo-spec.md`.
 
 ## 14. Build order
 

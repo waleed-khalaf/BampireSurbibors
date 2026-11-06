@@ -4,7 +4,7 @@
 
 ### Issue tracker
 
-Issues are tracked as local markdown files under `.scratch/<feature>/`. See `docs/agents/issue-tracker.md`.
+Issues and tickets live in GitHub Issues (`waleed-khalaf/BampireSurbibors`), managed with the `gh` CLI. Specs live in `docs/`. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
