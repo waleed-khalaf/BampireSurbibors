@@ -1,11 +1,11 @@
-﻿# Debug captures
+﻿# Debug capture service
 
 Status: ready-for-agent
 Blocked by: 01
 
-A `DebugCapture` autoload, active only in debug builds (`OS.is_debug_build()`).
-- Rolling: save a viewport screenshot every 5 s to `debug_captures/rolling/`, keeping the newest 60.
-- F12: save `debug_captures/snap_<timestamp>.png` plus `snap_<timestamp>.txt` (run time, Shireen's position and Patience, weapon with buffs/abilities, passives, admirer count, fps, the last 20 log lines and errors).
-- `DebugCapture.snapshot(reason)` for automatic captures (game over now; victory and errors later).
-- Systems register state through a small provider API, so the capture doesn't depend on specific scenes.
-- File names use local date and time. The folder is gitignored.
+A global service, active in dev builds only, living in the view layer.
+- Rolling screenshot every 5 s into the capture folder, keeping the newest 60.
+- F12: a screenshot plus `state.txt` with the run time, Shireen's position and Patience, weapon with buffs/abilities, passives, admirer count, fps, and the last 20 log lines and errors.
+- `state.txt` is built from whatever state providers are registered (the Run view registers the Run's state snapshot), so the service doesn't depend on specific scenes.
+- An API to snapshot with a reason, used for run ended now and errors later.
+- Not covered by automated tests; verify by playing.

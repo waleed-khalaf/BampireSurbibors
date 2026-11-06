@@ -238,8 +238,10 @@ Auto-aim targets the nearest admirer, except the Cane, which uses the facing dir
 
 - **Godot 4.7.x, standard (non-.NET) build. GDScript with static types everywhere.**
 - **Target:** up to **~300 admirers on screen at 60 fps** plus pickups, on an ordinary laptop.
-  - Admirers are lightweight nodes moved by code, not physics bodies, with simple separation so crowds don't stack.
-  - Hits use distance checks (with a spatial grid if needed), not per-enemy physics.
+- **Architecture (see `docs/adr/0001-run-simulation-seam.md`):** all gameplay rules live in a headless, deterministic **Run simulation**, which is also the single test seam (GdUnit4, headless). Godot scenes only draw its state and feed it keyboard input.
+  - Admirers, projectiles and pickups are data records inside the Run, drawn by a pooled renderer. They aren't nodes and they don't use physics.
+  - Separation and hits use a spatial grid with distance checks.
+  - Weapons, abilities, admirers, passives and the boss plug in as data plus a small behavior class, so new content doesn't change the core.
 - **Data-driven tuning:** weapon, buff, ability, admirer and spawn-timeline numbers live in `Resource` files (`.tres`), not hard-coded, so balancing is editing data.
 
 ### Debug captures (dev builds only)
@@ -251,8 +253,8 @@ Auto-aim targets the nearest admirer, except the Cane, which uses the facing dir
 
 ### Workflow
 - Claude writes the scripts and scenes. The user plays with **F5** and gives feedback.
-- A local git repo with one commit per working feature. The user may add a GitHub remote later.
-- Work items live under `.scratch/` (see `docs/agents/issue-tracker.md`).
+- A git repo with one commit per working feature, pushed to GitHub (`waleed-khalaf/BampireSurbibors`).
+- Work items live under `.scratch/` (see `docs/agents/issue-tracker.md`). The full demo spec is `.scratch/demo/spec.md`.
 
 ## 14. Build order
 

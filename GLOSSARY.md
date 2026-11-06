@@ -22,6 +22,10 @@ Domain terms for *Habibi, Get Closer*. Use these words in code, issues and docs.
 | **Passive** | A stat item from a lamp, rank 1–3: Comfy Slippers, Kohl Eyeliner, Big Hair, Oud Perfume, Gold Bangles. | item, relic |
 | **Karkadeh tea** | A rare ground pickup that restores Patience. | health potion |
 | **Run** | One 5-minute attempt, from weapon select to the end screen. | level, stage, round |
+| **Run simulation** | The headless, deterministic module that holds every gameplay rule for a run. Advanced with `step`, read through its state snapshot and events. The project's single test seam (ADR-0001). | game manager, world |
+| **Behavior** | The small class that gives a weapon, ability, admirer, passive or the boss its logic, picked by ID from its data file. | script, controller |
+| **Content registry** | Loads and validates all content data and maps behavior IDs to classes. | database, manager |
+| **View** | The Godot scenes that draw the Run simulation and feed it input. They hold no rules. | client, frontend |
 | **Overtime** | After 5:00 with the boss still up: the entourage floods in until the run ends. | |
 | **Bark** | A short shouted voice line from an admirer or Shireen. | |
 | **Debug capture** | A dev-build screenshot (rolling every 5 s, F12 or automatic) plus an optional `state.txt`, saved to `debug_captures/`. | |
