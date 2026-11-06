@@ -2,7 +2,8 @@ class_name RunView
 extends Node2D
 ## The view for one Run. It holds no gameplay rules: it owns a Run, turns real
 ## frame time into fixed 60 Hz steps, feeds in keyboard input and draws the
-## Run's snapshot: Shireen, the sand and props around her, and the run timer.
+## Run's snapshot: Shireen, the admirers, the sand and props around them, and
+## the run timer.
 
 ## If a frame takes very long (a hitch, the window being dragged), don't try to
 ## catch up with hundreds of steps at once; drop the excess time instead.
@@ -12,14 +13,15 @@ var _run: Run
 var _rng_seed: int
 ## Real time received from the engine that hasn't been simulated yet.
 var _accumulator: float = 0.0
-## The latest snapshot, and Shireen's position one step before it. Drawing
-## blends between the two, so she glides smoothly on screens faster than 60 Hz.
+## The latest snapshot, and the one a step before it. Drawing blends between
+## the two, so everyone glides smoothly on screens faster than 60 Hz.
 var _snapshot: RunSnapshot
-var _previous_position: Vector2
+var _previous: RunSnapshot
 
 @onready var _sand: EndlessSand = %Sand
 @onready var _props: PropScatter = %Props
 @onready var _shireen: ShireenSprite = %Shireen
+@onready var _admirers: AdmirerRenderer = %Admirers
 @onready var _camera: Camera2D = %Camera
 @onready var _timer_label: Label = %TimerLabel
 @onready var _error_label: Label = %ErrorLabel
@@ -37,7 +39,7 @@ func _ready() -> void:
 	_rng_seed = randi()
 	_run = Run.new(RunConfig.new(content, _rng_seed, play_area))
 	_snapshot = _run.snapshot()
-	_previous_position = _snapshot.shireen_position
+	_previous = _snapshot
 	_sand.view_size = play_area
 	_props.view_size = play_area
 	DebugCapture.register_provider("Run", _debug_state)
@@ -63,7 +65,7 @@ func _process(delta: float) -> void:
 	_accumulator += delta
 	var steps: int = 0
 	while _accumulator >= Run.TIMESTEP and steps < MAX_STEPS_PER_FRAME:
-		_previous_position = _snapshot.shireen_position
+		_previous = _snapshot
 		_run.step(Run.TIMESTEP, _read_move_direction())
 		_snapshot = _run.snapshot()
 		_accumulator -= Run.TIMESTEP
@@ -78,10 +80,11 @@ func _render(delta: float) -> void:
 	var blend: float = _accumulator / Run.TIMESTEP
 	# Round to whole pixels so the art stays crisp. The camera sits exactly on
 	# Shireen, so she never jitters against the screen while the world scrolls.
-	var shown: Vector2 = _previous_position.lerp(_snapshot.shireen_position, blend).round()
+	var shown: Vector2 = _previous.shireen_position.lerp(_snapshot.shireen_position, blend).round()
 	_shireen.position = shown
 	_camera.position = shown
 	_shireen.show_state(_snapshot, delta)
+	_admirers.show_admirers(_snapshot, _previous, blend, delta)
 	_sand.follow(shown)
 	_props.follow(shown)
 	_timer_label.text = format_run_time(_snapshot.time)

@@ -5,3 +5,4 @@
 [resource]
 script = ExtResource("1_shireen")
 move_speed = 90.0
+body_radius = 6.0

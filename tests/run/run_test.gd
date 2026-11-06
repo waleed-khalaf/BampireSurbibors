@@ -40,16 +40,19 @@ func test_sixty_steps_make_one_second_of_run_time() -> void:
 
 
 func test_five_minutes_of_steps_report_five_minutes_without_drift() -> void:
-	var run := Run.new(RunConfig.new(TestContent.real(), 1))
+	# No admirers: this is about the clock, and simulating five minutes of a
+	# 300-strong crowd would add ~10 s to every test run.
+	var run := Run.new(RunConfig.new(TestContent.with_shireen_speed(90.0), 1))
 
-	_play(run, 5 * 60 * Run.STEPS_PER_SECOND)
+	for i: int in 5 * 60 * Run.STEPS_PER_SECOND:
+		run.step(Run.TIMESTEP, _scripted_input(i))
 
 	assert_float(run.snapshot().time).is_equal_approx(300.0, 0.000001)
 
 
-## Shireen's position and facing depend on the scripted input, so a Run that
-## read anything outside its seed and inputs would drift apart here. Nothing
-## reads the seed yet; that starts with admirer spawns in ticket 04.
+## Shireen's position and facing depend on the scripted input and the
+## admirers' spawn points on the seed, so a Run that read anything outside its
+## seed and inputs would drift apart here.
 func test_the_same_seed_and_inputs_produce_identical_snapshots() -> void:
 	var first := Run.new(RunConfig.new(TestContent.real(), 12345))
 	var second := Run.new(RunConfig.new(TestContent.real(), 12345))
