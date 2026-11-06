@@ -18,3 +18,5 @@
 ## Comments
 
 **2026-11-06 (Claude):** Implemented. All acceptance criteria checked: 5 headless tests pass via `run_tests.cmd`; window, stretch, filtering, input map and F11 verified in a running game.
+
+**2026-11-06 (Claude):** Review follow-up. The determinism test exists and compares every step, but it can't fail yet: nothing reads the seed or the move direction, and the snapshot holds only time and tick. It starts to bite once ticket 02 puts Shireen's position in the snapshot. The F12 input action is named `debug_capture` to match the glossary. Only F11 is wired up so far; the README says which ticket wires each of the other keys.

@@ -22,18 +22,30 @@ if "!GODOT!"=="" (
     echo Could not find Godot 4.7. Set GODOT_BIN to the path of Godot_v4.7.x_win64_console.exe
     exit /b 1
 )
+if not exist "!GODOT!" (
+    echo Godot not found at "!GODOT!". Check the GODOT_BIN environment variable.
+    exit /b 1
+)
 
 set "TEST_ARGS=%*"
 if "!TEST_ARGS!"=="" set "TEST_ARGS=-a res://tests"
 
 :: Import first: on a fresh clone Godot has not yet built its class list
 :: (.godot/ is gitignored), and tests would fail to find Run, RunConfig, ...
-"!GODOT!" --headless --path . --import >nul 2>&1
+:: The import is noisy, so its output is only shown if it fails.
+set "IMPORT_LOG=%TEMP%\habibi_godot_import.log"
+"!GODOT!" --headless --path . --import >"!IMPORT_LOG!" 2>&1
+if errorlevel 1 (
+    type "!IMPORT_LOG!"
+    echo Godot import FAILED, see the output above.
+    exit /b 1
+)
 
 :: --ignoreHeadlessMode: our tests never use UI input, so headless is fine.
-:: --remote-debug to an unused port stops Godot dropping into its interactive
-:: debugger on a script error (which would hang the command).
-"!GODOT!" --headless --path . -s -d --remote-debug tcp://127.0.0.1:0 res://addons/gdUnit4/bin/GdUnitCmdTool.gd --ignoreHeadlessMode !TEST_ARGS!
+:: No -d (debug) flag: with it, a script error drops Godot into its
+:: interactive debugger. Without it, GdUnit4 still reports script errors as
+:: failed tests and returns a non-zero exit code.
+"!GODOT!" --headless --path . -s res://addons/gdUnit4/bin/GdUnitCmdTool.gd --ignoreHeadlessMode !TEST_ARGS!
 set "EXIT_CODE=!ERRORLEVEL!"
 
 if "!EXIT_CODE!"=="0" (echo All tests passed.) else (echo Tests FAILED, exit code !EXIT_CODE!.)

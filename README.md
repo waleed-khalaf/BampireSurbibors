@@ -12,15 +12,15 @@ A silly survivors-like made in Godot 4.7. Shireen, an Egyptian belly dancer, daz
 
 Press **F5** in the editor (or the ▶ button at the top right).
 
-| Action | Keys |
-|---|---|
-| Move | WASD or arrow keys |
-| Accept | Enter |
-| Pause | Esc |
-| Fullscreen on/off | F11 |
-| Debug snapshot (dev builds) | F12 |
+| Action | Keys | Works yet? |
+|---|---|---|
+| Fullscreen on/off | F11 | Yes |
+| Move | WASD or arrow keys | Ticket 02 (Shireen walks) |
+| Debug capture (dev builds) | F12 | Ticket 03 (debug captures) |
+| Accept | Enter | Ticket 05 (restart after "You said yes.") |
+| Pause | Esc | Ticket 09 (title, weapon select and pause) |
 
-For now the game shows only the run timer ticking up. Later tickets add Shireen, admirers and the rest.
+The keys are all mapped already, but for now the game shows only the run timer ticking up and F11 is the only key that does anything.
 
 ## Run the tests
 

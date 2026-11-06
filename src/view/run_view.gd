@@ -8,10 +8,6 @@ extends Node2D
 ## catch up with hundreds of steps at once; drop the excess time instead.
 const MAX_STEPS_PER_FRAME: int = 5
 
-## Base resolution from the project settings. The Run gets it as data so it
-## never has to ask the engine.
-const PLAY_AREA: Vector2 = Vector2(640, 360)
-
 var _run: Run
 ## Real time received from the engine that hasn't been simulated yet.
 var _accumulator: float = 0.0
@@ -23,7 +19,7 @@ func _ready() -> void:
 	# Each run gets a fresh random seed. The seed is what makes a run
 	# reproducible, so later the debug capture will record it.
 	var rng_seed: int = randi()
-	_run = Run.new(RunConfig.new(rng_seed, PLAY_AREA))
+	_run = Run.new(RunConfig.new(rng_seed, _read_play_area()))
 	_update_timer_label()
 
 
@@ -37,6 +33,15 @@ func _process(delta: float) -> void:
 	if steps == MAX_STEPS_PER_FRAME:
 		_accumulator = minf(_accumulator, Run.TIMESTEP)
 	_update_timer_label()
+
+
+## The base resolution from the project settings (Display > Window > Size).
+## The view reads it so the Run gets it as data and never asks the engine.
+func _read_play_area() -> Vector2:
+	return Vector2(
+		ProjectSettings.get_setting("display/window/size/viewport_width"),
+		ProjectSettings.get_setting("display/window/size/viewport_height"),
+	)
 
 
 ## Keyboard only (WASD or arrows). get_vector already caps diagonals at
