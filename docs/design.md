@@ -248,7 +248,7 @@ Auto-aim targets the nearest admirer, except the Cane, which uses the facing dir
 - **Rolling capture:** a screenshot every 5 s, keeping the last 60 (~5 min).
 - **F12 bug snapshot:** a screenshot plus `state.txt`. It records the run time, Shireen's position and Patience, the weapon with its buffs and abilities, her passives, the admirer count, fps and the last log lines and errors.
 - **Auto-snapshots** on game over, victory and script errors.
-- Saved to `debug_captures/` in the project, named by date and time, and excluded by `.gitignore`.
+- Saved to `debug_captures/` in the project, named by date and time, and excluded by `.gitignore` and (through a `.gdignore`) from the editor's import. An exported debug build saves to `debug_captures/` in Godot's user data folder instead, because its `res://` is read-only.
 - When the user reports an issue, Claude reads the matching captures before changing code.
 
 ### Workflow

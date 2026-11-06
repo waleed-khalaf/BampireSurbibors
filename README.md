@@ -24,7 +24,7 @@ The keys are all mapped already. For now Shireen can walk around the endless san
 
 ## Report a bug
 
-While you play from the editor, the game saves a screenshot every 5 seconds to `debug_captures/rolling/` and keeps the newest 60 (about 5 minutes). When something looks wrong, press **F12**: "Debug capture saved" appears at the top left, and a folder like `debug_captures/2026-11-06_14-03-22_f12/` holds `screenshot.png` and `state.txt` (run time, Shireen's position, fps, the seed and the last log lines and errors). Then tell Claude what happened; it reads the captures before changing code. The folder is gitignored, and exported release builds make no captures.
+While you play from the editor, the game saves a screenshot every 5 seconds to `debug_captures/rolling/` and keeps the newest 60 (about 5 minutes). When something looks wrong, press **F12**: "Debug capture saved" appears at the top left, and a folder like `debug_captures/2026-11-06_14-03-22_f12/` holds `screenshot.png` and `state.txt` (run time, Shireen's position, fps, the seed and the last log lines and errors). Then tell Claude what happened; it reads the captures before changing code. The folder is gitignored and Godot's FileSystem panel doesn't show it, so open it in Explorer. An exported debug build saves its captures to `%APPDATA%\Godot\app_userdata\Habibi, Get Closer\debug_captures\` instead (an exported game can't write into its own files), and exported release builds make no captures.
 
 ## Run the tests
 
