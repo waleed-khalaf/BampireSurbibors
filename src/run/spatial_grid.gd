@@ -5,25 +5,42 @@ extends RefCounted
 ## would be ~45,000 distance checks per step; with the grid each admirer only
 ## looks at the few others in the cells around it.
 ##
-## The world is endless, so the grid only covers the box around the points it
-## was last built from. It's rebuilt from scratch every step: [method rebuild]
-## sorts the points into cells (a counting sort into flat arrays, which is much
-## faster in GDScript than a dictionary of lists), then [method query] lists
-## the points near a position.
+## The cells are always the same size, however far apart the points are. An
+## earlier version let the cells grow with the crowd's bounding box, and that
+## made a cliff: once Shireen had walked away for minutes, the stragglers far
+## behind blew the cells up to 100+ px, and a query around one packed admirer
+## returned a large part of the crowd instead of his few neighbors (see the
+## strung-out crowd test in tests/run/dowry_uncle_test.gd).
+##
+## The world is endless, so instead of growing, the grid wraps around like
+## the screen in Pac-Man: cell coordinates are taken modulo
+## [constant CELLS_PER_SIDE] on each axis, so a point 32 cells (about 450 px
+## with the Uncles' cells) to the right lands in the same cell as one here.
+## The grid stays the same size whatever the crowd does. Points closer than
+## 32 cells never share a cell by accident, so a query one cell wide never
+## sees the same cell twice, and a crowd strung out far behind Shireen is
+## smeared evenly over the grid: it adds a few wrong candidates to each query,
+## which the caller's exact distance check throws out, never a cliff.
+##
+## It's rebuilt from scratch every step: [method rebuild] sorts the points
+## into cells (a counting sort into flat arrays, which is much faster in
+## GDScript than a dictionary of lists), then [method query] lists the points
+## near a position. Cells in one row sit next to each other in [member _items],
+## so one row of a query is one continuous run, except where it wraps.
 ##
 ## It stores indices into the caller's array, not objects, so the same grid
 ## works for admirer separation now and for hit queries later.
 
-## Upper limit on cells along each side. If the points are spread far apart
-## (Shireen sprinting away from a trailing crowd), cells grow instead of the
-## grid growing without limit. Bigger cells are still correct, just slower.
-const MAX_CELLS_PER_SIDE: int = 64
+## The wrapped grid is 32 × 32 cells. A power of two, so the modulo is a
+## bitwise AND, which also does the right thing for negative coordinates
+## (unlike %). Fewer cells would make a crowd of 300 touching Uncles wrap onto
+## itself; more would make the running-total loop in [method rebuild] slower.
+const CELLS_PER_SIDE_BITS: int = 5
+const CELLS_PER_SIDE: int = 1 << CELLS_PER_SIDE_BITS
+const CELL_MASK: int = CELLS_PER_SIDE - 1
+const CELL_COUNT: int = CELLS_PER_SIDE * CELLS_PER_SIDE
 
-var _min_cell_size: float
-var _cell_size: float = 1.0
-var _origin: Vector2 = Vector2.ZERO
-var _columns: int = 0
-var _rows: int = 0
+var _cell_size: float
 ## Point indices sorted by cell. The points in cell c are
 ## _items[_cell_starts[c]] up to (not including) _items[_cell_starts[c + 1]].
 var _items: PackedInt32Array = PackedInt32Array()
@@ -32,11 +49,12 @@ var _cell_starts: PackedInt32Array = PackedInt32Array()
 var _cell_of_item: PackedInt32Array = PackedInt32Array()
 
 
-## [param min_cell_size] should be at least the largest query radius, so a
-## query never has to look further than one cell in each direction.
-func _init(min_cell_size: float) -> void:
-	assert(min_cell_size > 0.0, "SpatialGrid: min_cell_size must be positive")
-	_min_cell_size = min_cell_size
+## [param cell_size] should be at least the largest query radius, so a query
+## never has to look further than one cell in each direction.
+func _init(cell_size: float) -> void:
+	assert(cell_size > 0.0, "SpatialGrid: cell_size must be positive")
+	_cell_size = cell_size
+	_cell_starts.resize(CELL_COUNT + 1)
 
 
 ## Sorts [param points] into cells. Call it again whenever they move.
@@ -44,38 +62,27 @@ func rebuild(points: PackedVector2Array) -> void:
 	var count: int = points.size()
 	_items.resize(count)
 	_cell_of_item.resize(count)
-	if count == 0:
-		_columns = 0
-		_rows = 0
-		return
-
-	var low: Vector2 = points[0]
-	var high: Vector2 = points[0]
-	for point: Vector2 in points:
-		low = low.min(point)
-		high = high.max(point)
-	var extent: Vector2 = high - low
-	_cell_size = maxf(_min_cell_size, maxf(extent.x, extent.y) / (MAX_CELLS_PER_SIDE - 1))
-	_origin = low
-	_columns = floori(extent.x / _cell_size) + 1
-	_rows = floori(extent.y / _cell_size) + 1
-
-	# Count the points in each cell, turn the counts into start offsets, then
-	# drop every point into its slot.
-	_cell_starts.resize(_columns * _rows + 1)
 	_cell_starts.fill(0)
+
+	# Count the points in each cell...
 	for i: int in count:
-		var offset: Vector2 = points[i] - _origin
-		var cell: int = floori(offset.y / _cell_size) * _columns + floori(offset.x / _cell_size)
+		var point: Vector2 = points[i]
+		var cell: int = ((floori(point.y / _cell_size) & CELL_MASK) << CELLS_PER_SIDE_BITS) \
+				| (floori(point.x / _cell_size) & CELL_MASK)
 		_cell_of_item[i] = cell
-		_cell_starts[cell + 1] += 1
-	for cell: int in _columns * _rows:
-		_cell_starts[cell + 1] += _cell_starts[cell]
-	var next_slot: PackedInt32Array = _cell_starts.duplicate()
+		_cell_starts[cell] += 1
+	# ...turn the counts into running totals, so each entry is where its cell
+	# ends and the last entry is the total...
+	for cell: int in range(1, CELL_COUNT + 1):
+		_cell_starts[cell] += _cell_starts[cell - 1]
+	# ...then fill each cell from its end backwards. Afterwards each entry has
+	# moved down to where its cell starts, and the next entry is where it
+	# ends. Filling backwards saves copying the whole array to track the next
+	# free slot per cell, which this used to do every step.
 	for i: int in count:
 		var cell: int = _cell_of_item[i]
-		_items[next_slot[cell]] = i
-		next_slot[cell] += 1
+		_cell_starts[cell] -= 1
+		_items[_cell_starts[cell]] = i
 
 
 ## Fills [param out] with the indices of the points in every cell the circle
@@ -84,17 +91,23 @@ func rebuild(points: PackedVector2Array) -> void:
 ## queries saves allocating a new one each time.
 func query(position: Vector2, radius: float, out: Array[int]) -> void:
 	out.clear()
-	if _columns == 0:
-		return
-	var first_x: int = maxi(floori((position.x - radius - _origin.x) / _cell_size), 0)
-	var last_x: int = mini(floori((position.x + radius - _origin.x) / _cell_size), _columns - 1)
-	var first_y: int = maxi(floori((position.y - radius - _origin.y) / _cell_size), 0)
-	var last_y: int = mini(floori((position.y + radius - _origin.y) / _cell_size), _rows - 1)
-	if first_x > last_x or first_y > last_y:
-		return
-	for cy: int in range(first_y, last_y + 1):
-		# Cells in one row sit next to each other in _items, so one row of
-		# the query is one continuous run.
-		var row: int = cy * _columns
-		for k: int in range(_cell_starts[row + first_x], _cell_starts[row + last_x + 1]):
-			out.append(_items[k])
+	var first_column: int = floori((position.x - radius) / _cell_size)
+	var first_row: int = floori((position.y - radius) / _cell_size)
+	# A circle wider than the whole wrapped grid would come round to the same
+	# cells again, so stop after one lap.
+	var last_column: int = mini(floori((position.x + radius) / _cell_size), first_column + CELL_MASK)
+	var last_row: int = mini(floori((position.y + radius) / _cell_size), first_row + CELL_MASK)
+	var first_wrapped_column: int = first_column & CELL_MASK
+	var last_wrapped_column: int = last_column & CELL_MASK
+	for row: int in range(first_row, last_row + 1):
+		var row_start: int = (row & CELL_MASK) << CELLS_PER_SIDE_BITS
+		if first_wrapped_column <= last_wrapped_column:
+			for k: int in range(_cell_starts[row_start + first_wrapped_column], _cell_starts[row_start + last_wrapped_column + 1]):
+				out.append(_items[k])
+		else:
+			# The columns wrap past the right edge: the run is first..31, then
+			# 0..last.
+			for k: int in range(_cell_starts[row_start + first_wrapped_column], _cell_starts[row_start + CELLS_PER_SIDE]):
+				out.append(_items[k])
+			for k: int in range(_cell_starts[row_start], _cell_starts[row_start + last_wrapped_column + 1]):
+				out.append(_items[k])

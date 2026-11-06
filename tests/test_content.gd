@@ -30,10 +30,16 @@ static func with_shireen_speed(move_speed: float) -> ContentRegistry:
 
 ## A spawn ramp for [param admirer_id] with a steady rate (no ramp) and a cap.
 static func steady_spawns(admirer_id: StringName, per_second: float, max_admirers: int) -> SpawnRampData:
+	return ramping_spawns(admirer_id, per_second, 0.0, max_admirers)
+
+
+## A spawn ramp for [param admirer_id] that starts at [param per_second] and
+## climbs by [param extra_per_second_each_minute], up to a cap.
+static func ramping_spawns(admirer_id: StringName, per_second: float, extra_per_second_each_minute: float, max_admirers: int) -> SpawnRampData:
 	var spawns := SpawnRampData.new()
 	spawns.admirer_id = admirer_id
 	spawns.spawns_per_second_at_start = per_second
-	spawns.extra_spawns_per_second_each_minute = 0.0
+	spawns.extra_spawns_per_second_each_minute = extra_per_second_each_minute
 	spawns.max_admirers = max_admirers
 	return spawns
 
@@ -50,3 +56,8 @@ static func uncle_crowd(count: int) -> ContentRegistry:
 static func steady_uncles(per_second: float, max_admirers: int = 1000) -> ContentRegistry:
 	var content := real()
 	return ContentRegistry.from_data(content.shireen, [real_uncle()], steady_spawns(&"dowry_uncle", per_second, max_admirers))
+
+
+## A chosen Shireen chased by real Dowry Uncles arriving on a chosen ramp.
+static func uncles_chasing(shireen: ShireenData, per_second: float, extra_per_second_each_minute: float, max_admirers: int) -> ContentRegistry:
+	return ContentRegistry.from_data(shireen, [real_uncle()], ramping_spawns(&"dowry_uncle", per_second, extra_per_second_each_minute, max_admirers))

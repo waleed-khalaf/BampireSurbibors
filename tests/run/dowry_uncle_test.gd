@@ -180,6 +180,53 @@ func test_three_hundred_uncles_step_within_the_time_budget() -> void:
 	assert_float(average_usec).is_less(STEP_BUDGET_USEC)
 
 
+## The slow case the test above can't see. Shireen walks away from the Uncles,
+## who follow at only 40 px/s, for a long time, so the first Uncles end up
+## thousands of pixels behind the newest. Then she stops: the Uncles still
+## arriving pack in around her within seconds, while the stragglers take
+## minutes to catch up. A grid whose cells grow with the crowd's extent then
+## puts the whole packed crowd into a few cells, and every packed admirer
+## compares against nearly all the others instead of his few neighbors.
+##
+## The real Shireen (90 px/s) strings the crowd out by only 50 px per second,
+## so she would have to walk for three minutes. To keep the test quick a
+## stand-in walks at the fastest speed the content allows (400 px/s), and the
+## spawn ramp starts from zero so that few Uncles arrive during the walk and
+## most of them after she stops. The Uncles are the real ones.
+func test_a_strung_out_crowd_pressing_in_steps_within_the_time_budget() -> void:
+	var content := TestContent.uncles_chasing(TestContent.shireen_with_speed(400.0), 0.0, 6.0, 300)
+	var run := Run.new(RunConfig.new(content, 23))
+	# 40 s of sprinting leaves ~80 Uncles strung out over ~12,000 px...
+	for i: int in 40 * Run.STEPS_PER_SECOND:
+		run.step(Run.TIMESTEP, Vector2.RIGHT)
+	# ...and 40 s of standing lets the other ~220 arrive and pack in around
+	# her, while the stragglers have closed only 1,600 px of that gap.
+	_stand(run, 40 * Run.STEPS_PER_SECOND)
+
+	# Check the scene really is what the test is about: the cap of 300 is
+	# reached, most of them are packed around her, and the stragglers are
+	# still thousands of pixels away.
+	var snapshot := run.snapshot()
+	var packed: int = 0
+	var farthest: float = 0.0
+	for admirer: AdmirerSnapshot in snapshot.admirers:
+		var distance: float = admirer.position.distance_to(snapshot.shireen_position)
+		if distance < 150.0:
+			packed += 1
+		farthest = maxf(farthest, distance)
+	assert_int(snapshot.admirer_count).is_equal(300)
+	assert_int(packed).is_greater(150)
+	assert_float(farthest).is_greater(8000.0)
+
+	const MEASURED_STEPS: int = 120
+	var started: int = Time.get_ticks_usec()
+	_stand(run, MEASURED_STEPS)
+	var average_usec: float = float(Time.get_ticks_usec() - started) / MEASURED_STEPS
+
+	print("strung-out crowd, %d packed, stragglers %.0f px behind: %.0f µs per step (budget %.0f)" % [packed, farthest, average_usec, STEP_BUDGET_USEC])
+	assert_float(average_usec).is_less(STEP_BUDGET_USEC)
+
+
 ## The seed decides where admirers arrive, and nothing else does: the same
 ## seed gives the same crowd, a different seed a different one.
 func test_the_seed_decides_where_uncles_arrive() -> void:
