@@ -200,4 +200,5 @@ Under the hood, every gameplay rule lives in one headless, deterministic **Run s
 - **The weapon pools are drafts** pending the user's review (design doc §6). Expect value and ability tweaks before or during milestone 5. The data-driven model makes this cheap.
 - **First cut** if time runs short: the Falconer.
 - **Build order** (design doc §14) still applies. The work is broken into tickets tracked as [GitHub issues](https://github.com/waleed-khalaf/BampireSurbibors/issues), each titled `NN: <name>`. Tickets 01–08 make up the first playable.
+- **Checks parked until the end** (for example, ones that need an exported build) are listed in [end-of-demo-checks.md](end-of-demo-checks.md). The demo isn't done until that list is worked through.
 - The user has zero Godot experience. Explanations in the code and commits should say *why*, and the user plays each milestone with F5 before the next begins.
