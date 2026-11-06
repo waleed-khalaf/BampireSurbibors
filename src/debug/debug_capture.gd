@@ -93,6 +93,11 @@ func unregister_provider(section: String) -> void:
 ## current frame has been drawn). [param reason] says why, e.g. "f12",
 ## "run ended", "victory" or "error". Returns the folder's path, or "" when
 ## captures are off.
+##
+## Never call this straight from a Logger callback or from another thread: it
+## prints (which would call the Logger again) and touches the scene tree (main
+## thread only). Defer it, e.g. DebugCapture.capture.call_deferred("error"),
+## and Godot runs it on the main thread at the end of the frame instead.
 func capture(reason: String) -> String:
 	if not is_active():
 		return ""
