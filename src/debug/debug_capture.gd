@@ -35,6 +35,12 @@ var rolling_enabled: bool = true
 var _active: bool = false
 var _log: CaptureLog
 var _providers: Dictionary[String, Callable] = {}
+## True from a rolling tick until its screenshot is on disk. Godot only draws
+## while the window is visible, so a save started while the game is minimized
+## waits until it is restored. Without this flag every 5 s tick during that
+## spell would park one more waiting save, and on restore they would all wake
+## in the same frame and write the same screenshot several times.
+var _rolling_save_pending: bool = false
 var _timer: Timer
 var _toast: Label
 var _toast_tween: Tween
@@ -128,14 +134,28 @@ func _start_rolling() -> void:
 	_timer.start()
 
 
+## Saves one rolling screenshot, named by the clock, and prunes the folder.
+## Called by the 5 s timer; a tick that arrives while an earlier save is still
+## waiting for a frame is skipped.
 func _save_rolling_screenshot() -> void:
+	# One waiting save is enough (see _rolling_save_pending): a second tick
+	# while the window is minimized would only add a copy of the same screenshot.
+	if _rolling_save_pending:
+		return
 	if not _prepare_root_folder():
 		return
+	_rolling_save_pending = true
 	var folder: String = root_folder.path_join("rolling")
 	DirAccess.make_dir_recursive_absolute(folder)
+	# Read the clock only once a frame has actually been drawn. A save that sat
+	# through a minimized spell is then named by when play resumed, not by when
+	# the tick happened minutes earlier. The screenshot itself is the next
+	# frame, a fraction of a second after the name.
+	await RenderingServer.frame_post_draw
 	var file_name: String = CaptureFiles.timestamp_name(Time.get_datetime_dict_from_system()) + ".png"
 	await _save_screenshot_after_draw(CaptureFiles.unused_path(folder.path_join(file_name)), false)
 	CaptureFiles.keep_newest(folder, "png", ROLLING_KEEP)
+	_rolling_save_pending = false
 
 
 ## Waits for the frame being built to finish drawing, then saves it. Called
