@@ -47,7 +47,9 @@ One row of two 32×32 frames, a walk cycle that plays at 4 frames per second (`s
 | 0 | 0 | Left foot forward |
 | 1 | 32 | Right foot forward, body up 1 px |
 
-His feet touch the sand at **(16, 30)**, like Shireen's. New admirer sheets go in `admirers/`, named after the admirer's id, and need a line in `SHEETS` in `src/view/admirer_renderer.gd`.
+His feet touch the sand at **(16, 30)**, like Shireen's.
+
+Every admirer sheet has this same layout: two 32×32 walk frames, feet at (16, 30). New sheets go in `admirers/`, named after the admirer's id: the `id` field inside his `.tres` file in `content/admirers/`, so `dowry_uncle` → `art/admirers/dowry_uncle.png`. The game finds them by that name, so nothing in the code needs to change. If a type's sheet is missing, the game warns in the Output panel with the path it expected and draws nothing for that type.
 
 ### `world/sand.png`: sand tile, 64×64
 
