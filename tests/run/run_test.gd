@@ -24,14 +24,14 @@ func _play(run: Run, ticks: int) -> Array[Dictionary]:
 
 
 func test_a_new_run_starts_at_zero() -> void:
-	var run := Run.new(RunConfig.new(1))
+	var run := Run.new(RunConfig.new(TestContent.real(), 1))
 
 	assert_float(run.snapshot().time).is_equal(0.0)
 	assert_int(run.snapshot().tick).is_equal(0)
 
 
 func test_sixty_steps_make_one_second_of_run_time() -> void:
-	var run := Run.new(RunConfig.new(1))
+	var run := Run.new(RunConfig.new(TestContent.real(), 1))
 
 	_play(run, Run.STEPS_PER_SECOND)
 
@@ -40,21 +40,19 @@ func test_sixty_steps_make_one_second_of_run_time() -> void:
 
 
 func test_five_minutes_of_steps_report_five_minutes_without_drift() -> void:
-	var run := Run.new(RunConfig.new(1))
+	var run := Run.new(RunConfig.new(TestContent.real(), 1))
 
 	_play(run, 5 * 60 * Run.STEPS_PER_SECOND)
 
 	assert_float(run.snapshot().time).is_equal_approx(300.0, 0.000001)
 
 
-## For now this guards the harness rather than the rules: the snapshot holds
-## only time and tick, and nothing yet reads the seed or the move direction,
-## so different seeds would also pass. It starts to bite as soon as the
-## snapshot gains something that depends on them (Shireen's position in
-## ticket 02, admirer spawns in ticket 04).
+## Shireen's position and facing depend on the scripted input, so a Run that
+## read anything outside its seed and inputs would drift apart here. Nothing
+## reads the seed yet; that starts with admirer spawns in ticket 04.
 func test_the_same_seed_and_inputs_produce_identical_snapshots() -> void:
-	var first := Run.new(RunConfig.new(12345))
-	var second := Run.new(RunConfig.new(12345))
+	var first := Run.new(RunConfig.new(TestContent.real(), 12345))
+	var second := Run.new(RunConfig.new(TestContent.real(), 12345))
 
 	var first_snapshots := _play(first, 10 * Run.STEPS_PER_SECOND)
 	var second_snapshots := _play(second, 10 * Run.STEPS_PER_SECOND)
@@ -66,7 +64,7 @@ func test_the_same_seed_and_inputs_produce_identical_snapshots() -> void:
 
 
 func test_a_snapshot_is_a_copy_that_does_not_change_the_run() -> void:
-	var run := Run.new(RunConfig.new(1))
+	var run := Run.new(RunConfig.new(TestContent.real(), 1))
 	run.step(Run.TIMESTEP, Vector2.ZERO)
 
 	var snapshot := run.snapshot()

@@ -4,28 +4,12 @@
 ::   run_tests.cmd                     run every test under tests/
 ::   run_tests.cmd -a res://tests/run  run only one folder (any GdUnit4 option works)
 ::
-:: Finds Godot from the GODOT_BIN environment variable, then `godot` on PATH,
-:: then the winget install folder. Exit code 0 means every test passed.
+:: Finds Godot through tools\find_godot.cmd. Exit code 0 means every test
+:: passed.
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
 
-set "GODOT=%GODOT_BIN%"
-if "!GODOT!"=="" (
-    for /f "delims=" %%G in ('where godot 2^>nul') do if "!GODOT!"=="" set "GODOT=%%G"
-)
-if "!GODOT!"=="" (
-    for /d %%D in ("%LOCALAPPDATA%\Microsoft\WinGet\Packages\GodotEngine.GodotEngine*") do (
-        for %%G in ("%%D\Godot_v4.7*_win64_console.exe") do set "GODOT=%%~fG"
-    )
-)
-if "!GODOT!"=="" (
-    echo Could not find Godot 4.7. Set GODOT_BIN to the path of Godot_v4.7.x_win64_console.exe
-    exit /b 1
-)
-if not exist "!GODOT!" (
-    echo Godot not found at "!GODOT!". Check the GODOT_BIN environment variable.
-    exit /b 1
-)
+call "%~dp0tools\find_godot.cmd" || exit /b 1
 
 set "TEST_ARGS=%*"
 if "!TEST_ARGS!"=="" set "TEST_ARGS=-a res://tests"

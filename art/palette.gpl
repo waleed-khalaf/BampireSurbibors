@@ -1,0 +1,31 @@
+GIMP Palette
+Name: Habibi, Get Closer
+Columns: 8
+#
+ 43  29  26	ink
+160  98  74	skin_shadow
+201 138 100	skin
+227 176 138	skin_light
+ 30  20  22	hair
+ 74  50  54	hair_light
+ 18  96  94	dress_dark
+ 31 143 134	dress
+ 79 194 176	dress_light
+168 110  28	gold_dark
+224 169  46	gold
+255 225 122	gold_light
+194  65  75	rose
+201 150  90	sand_dark
+226 182 115	sand
+239 203 142	sand_light
+248 230 184	sand_pale
+ 47 107  44	leaf_dark
+ 79 154  58	leaf
+140 198  74	leaf_light
+107  68  38	trunk_dark
+147  99  58	trunk
+ 36  36  44	car_black
+111 116 128	car_gray
+185 192 200	chrome
+232 230 223	car_white
+127 182 214	glass
