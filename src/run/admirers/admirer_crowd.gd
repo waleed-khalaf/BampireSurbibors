@@ -15,8 +15,10 @@ extends RefCounted
 ## costs double for almost no gain).
 const SEPARATION_PASSES: int = 1
 
-## How strongly the admirer farther from Shireen gives way in an overlap (see
-## [method _give_way_share]). 0 splits every overlap evenly.
+## How sharply the admirer farther from Shireen gives way in an overlap (see
+## [method _give_way_share]). At 8 the split is all-or-nothing unless the pair
+## is almost exactly level with her; 0 would split every overlap evenly. Tuned
+## together with SEPARATION_PASSES for the crush of 300; the tests depend on it.
 const GIVE_WAY: float = 8.0
 
 ## Admirers exactly on top of each other have no direction to be pushed in.
@@ -106,14 +108,19 @@ func _separate(shireen_position: Vector2) -> void:
 
 
 ## How much of an overlap admirer [param a] takes against [param b], from 0
-## to 1. The one farther from Shireen takes most of it: he's the one pushing
-## in from behind, and the one in front is already pressed against someone.
-## Splitting every overlap evenly instead lets the weight of the whole crowd
-## squeeze the inner rings together. Pairs side by side around her (about
-## the same distance) share it evenly.
+## to 1. In practice the one farther from Shireen takes all of it: he's the
+## one pushing in from behind, and the one in front is already pressed against
+## someone. Splitting every overlap evenly instead lets the weight of the whole
+## crowd squeeze the inner rings together.
+##
+## Only a pair almost exactly level with her shares the push. The split runs
+## on squared distances and saturates once their difference reaches 1/16 of
+## their sum, about 6% apart in plain distance: at 50 px from her, a neighbour
+## at 51 px takes 66%, at 52 px 81%, at 53 px 97%, and from 53.2 px on, all.
 static func _give_way_share(a: Vector2, b: Vector2, shireen_position: Vector2) -> float:
 	var a_distance: float = a.distance_squared_to(shireen_position)
 	var b_distance: float = b.distance_squared_to(shireen_position)
+	# The + 1.0 keeps the division safe when both stand exactly on Shireen.
 	return clampf(0.5 + (a_distance - b_distance) / (a_distance + b_distance + 1.0) * GIVE_WAY, 0.0, 1.0)
 
 

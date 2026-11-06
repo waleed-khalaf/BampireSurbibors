@@ -101,6 +101,9 @@ func _spawn_admirers(delta: float) -> void:
 	if _spawn_director == null:
 		return
 	var count: int = _spawn_director.spawns_due(delta, _time(), _crowd.size())
+	# Most steps spawn nobody, so don't look the type up for nothing.
+	if count == 0:
+		return
 	var type: AdmirerData = _config.content.admirers[_spawn_director.admirer_id()]
 	for i: int in count:
 		_last_admirer_id += 1
