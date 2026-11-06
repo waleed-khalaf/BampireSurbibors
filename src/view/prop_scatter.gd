@@ -20,8 +20,9 @@ const PROPS: Array[Dictionary] = [
 	{"texture": preload("res://art/props/lada_taxi.png"), "base": Vector2(24, 29), "weight": 2},
 ]
 
-## Size of the visible area in pixels (the 640×360 base resolution).
-var view_size: Vector2 = Vector2(640, 360)
+## Size of the visible area in pixels. RunView sets it from the project
+## settings before the first frame.
+var view_size: Vector2 = RunConfig.DEFAULT_PLAY_AREA
 
 ## Chunk coordinates -> the prop nodes in that chunk.
 var _chunks: Dictionary[Vector2i, Array] = {}

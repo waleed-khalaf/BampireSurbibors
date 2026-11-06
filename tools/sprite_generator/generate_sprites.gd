@@ -59,6 +59,9 @@ const SHIREEN_FRAMES: Array[Dictionary] = [
 
 var _colors: Dictionary[String, Color] = {}
 var _force: bool = false
+## Set when anything goes wrong, so the script exits with code 1 and
+## generate_sprites.cmd reports the failure.
+var _failed: bool = false
 
 
 func _init() -> void:
@@ -72,12 +75,19 @@ func _init() -> void:
 	_save_image(_draw_sand_tile(), "res://art/world/sand.png")
 	_save_image(_draw_palm_tree(), "res://art/props/palm_tree.png")
 	_save_image(_draw_lada_taxi(), "res://art/props/lada_taxi.png")
-	quit(0)
+	quit(1 if _failed else 0)
 
 
 func c(name: String) -> Color:
-	assert(_colors.has(name), "generate_sprites: '%s' is not in the palette" % name)
+	if not _colors.has(name):
+		_fail("'%s' is not in the palette" % name)
+		return Color.MAGENTA
 	return _colors[name]
+
+
+func _fail(message: String) -> void:
+	push_error("generate_sprites: " + message)
+	_failed = true
 
 
 # --- Saving -----------------------------------------------------------------
@@ -94,12 +104,16 @@ func _should_write(path: String) -> bool:
 func _save_image(image: Image, path: String) -> void:
 	if _should_write(path):
 		var error: Error = image.save_png(path)
-		assert(error == OK, "generate_sprites: could not save %s (error %d)" % [path, error])
+		if error != OK:
+			_fail("could not save %s (%s)" % [path, error_string(error)])
 
 
 func _save_text(text: String, path: String) -> void:
 	if _should_write(path):
 		var file := FileAccess.open(path, FileAccess.WRITE)
+		if file == null:
+			_fail("could not save %s (%s)" % [path, error_string(FileAccess.get_open_error())])
+			return
 		file.store_string(text)
 
 

@@ -4,20 +4,17 @@ extends GdUnitTestSuite
 ## the expected distances are easy to read.
 
 
-## A content set whose only change from the real one is Shireen's speed.
-func _content_with_speed(move_speed: float) -> ContentRegistry:
-	var shireen := ShireenData.new()
-	shireen.move_speed = move_speed
-	return ContentRegistry.from_data(shireen)
-
-
 func _run_with_speed(move_speed: float) -> Run:
-	return Run.new(RunConfig.new(1, RunConfig.DEFAULT_PLAY_AREA, _content_with_speed(move_speed)))
+	return Run.new(RunConfig.new(TestContent.with_shireen_speed(move_speed), 1))
 
 
 func _walk(run: Run, direction: Vector2, ticks: int) -> void:
 	for i: int in ticks:
 		run.step(Run.TIMESTEP, direction)
+
+
+func _stand(run: Run, ticks: int) -> void:
+	_walk(run, Vector2.ZERO, ticks)
 
 
 func test_shireen_walks_her_data_speed_in_pixels_per_second() -> void:
@@ -44,7 +41,7 @@ func test_shireen_keeps_facing_her_last_direction_after_she_stops() -> void:
 	var run := _run_with_speed(100.0)
 
 	_walk(run, Vector2(-1, -1), 30)
-	_walk(run, Vector2.ZERO, 30)
+	_stand(run, 30)
 
 	var snapshot := run.snapshot()
 	assert_vector(snapshot.shireen_facing).is_equal_approx(Vector2(-0.7071, -0.7071), Vector2(0.0001, 0.0001))

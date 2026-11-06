@@ -4,8 +4,9 @@ extends Sprite2D
 ## sand tile and jumps along in whole tiles to stay under the camera. Because
 ## it only ever moves by whole tiles, the pattern looks fixed to the world.
 
-## Size of the visible area in pixels (the 640×360 base resolution).
-var view_size: Vector2 = Vector2(640, 360)
+## Size of the visible area in pixels. RunView sets it from the project
+## settings before the first frame.
+var view_size: Vector2 = RunConfig.DEFAULT_PLAY_AREA
 
 
 func _ready() -> void:

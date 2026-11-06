@@ -8,7 +8,7 @@ extends RefCounted
 ## the view passes in everything it needs.
 ##
 ## Usage:
-##     var run := Run.new(RunConfig.new(42))
+##     var run := Run.new(RunConfig.new(ContentRegistry.load_default(), 42))
 ##     run.step(Run.TIMESTEP, Vector2.RIGHT)
 ##     print(run.snapshot().time)
 

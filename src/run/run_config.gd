@@ -17,13 +17,12 @@ const DEFAULT_PLAY_AREA: Vector2 = Vector2(640, 360)
 var play_area: Vector2 = DEFAULT_PLAY_AREA
 
 ## The content set the Run plays with: Shireen's data for now, later the
-## weapons, admirers and the rest.
+## weapons, admirers and the rest. The caller loads it (the view at startup,
+## tests through TestContent), so the Run never reads files itself.
 var content: ContentRegistry
 
 
-## [param p_content] defaults to the real game content, so a test that doesn't
-## care about content can just write RunConfig.new(seed).
-func _init(p_seed: int = 0, p_play_area: Vector2 = DEFAULT_PLAY_AREA, p_content: ContentRegistry = null) -> void:
+func _init(p_content: ContentRegistry, p_seed: int = 0, p_play_area: Vector2 = DEFAULT_PLAY_AREA) -> void:
+	content = p_content
 	rng_seed = p_seed
 	play_area = p_play_area
-	content = p_content if p_content != null else ContentRegistry.load_default()

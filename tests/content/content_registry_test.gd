@@ -4,12 +4,7 @@ extends GdUnitTestSuite
 
 const NOT_SHIREEN_PATH: String = "res://tests/content/fixtures/not_shireen.tres"
 const MISSING_PATH: String = "res://tests/content/fixtures/does_not_exist.tres"
-
-
-func _shireen_with_speed(move_speed: float) -> ShireenData:
-	var shireen := ShireenData.new()
-	shireen.move_speed = move_speed
-	return shireen
+const UNREADABLE_PATH: String = "res://tests/content/fixtures/unreadable.tres"
 
 
 func test_the_real_content_passes_validation() -> void:
@@ -25,7 +20,7 @@ func test_the_real_content_gives_shireen_90_pixels_per_second() -> void:
 
 
 func test_a_shireen_who_cannot_move_is_rejected() -> void:
-	var content := ContentRegistry.from_data(_shireen_with_speed(0.0))
+	var content := ContentRegistry.from_data(TestContent.shireen_with_speed(0.0))
 
 	assert_bool(content.is_valid()).is_false()
 	assert_array(content.errors).contains_exactly([
@@ -34,7 +29,7 @@ func test_a_shireen_who_cannot_move_is_rejected() -> void:
 
 
 func test_an_absurdly_fast_shireen_is_rejected() -> void:
-	var content := ContentRegistry.from_data(_shireen_with_speed(5000.0))
+	var content := ContentRegistry.from_data(TestContent.shireen_with_speed(5000.0))
 
 	assert_array(content.errors).contains_exactly([
 		"Shireen: move_speed must be between 10 and 400 px/s, but it is 5000.",
@@ -55,4 +50,14 @@ func test_a_data_file_of_the_wrong_type_is_rejected() -> void:
 
 	assert_array(content.errors).contains_exactly([
 		"Shireen: %s is a Gradient, not ShireenData. Its script should be res://src/content/shireen_data.gd." % NOT_SHIREEN_PATH,
+	])
+
+
+## A hand-edit typo leaves a file Godot can't parse. That must be a message,
+## not a crash.
+func test_a_data_file_godot_cannot_read_is_rejected() -> void:
+	var content := ContentRegistry.load_from(UNREADABLE_PATH)
+
+	assert_array(content.errors).contains_exactly([
+		"Shireen: %s could not be read. Open it in Godot to see what is wrong with it." % UNREADABLE_PATH,
 	])

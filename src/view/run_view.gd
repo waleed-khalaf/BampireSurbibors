@@ -34,7 +34,7 @@ func _ready() -> void:
 	# Each run gets a fresh random seed. The seed is what makes a run
 	# reproducible, so later the debug capture will record it.
 	var rng_seed: int = randi()
-	_run = Run.new(RunConfig.new(rng_seed, play_area, content))
+	_run = Run.new(RunConfig.new(content, rng_seed, play_area))
 	_snapshot = _run.snapshot()
 	_previous_position = _snapshot.shireen_position
 	_sand.view_size = play_area

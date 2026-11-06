@@ -38,6 +38,9 @@ static func load_from(shireen_path: String) -> ContentRegistry:
 		registry.errors.append("Shireen: no data file at %s." % shireen_path)
 		return registry
 	var resource: Resource = load(shireen_path)
+	if resource == null:
+		registry.errors.append("Shireen: %s could not be read. Open it in Godot to see what is wrong with it." % shireen_path)
+		return registry
 	if not resource is ShireenData:
 		registry.errors.append("Shireen: %s is a %s, not ShireenData. Its script should be %s." % [
 			shireen_path, resource.get_class(), (ShireenData as Script).resource_path,

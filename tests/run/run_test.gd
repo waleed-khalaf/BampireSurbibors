@@ -24,14 +24,14 @@ func _play(run: Run, ticks: int) -> Array[Dictionary]:
 
 
 func test_a_new_run_starts_at_zero() -> void:
-	var run := Run.new(RunConfig.new(1))
+	var run := Run.new(RunConfig.new(TestContent.real(), 1))
 
 	assert_float(run.snapshot().time).is_equal(0.0)
 	assert_int(run.snapshot().tick).is_equal(0)
 
 
 func test_sixty_steps_make_one_second_of_run_time() -> void:
-	var run := Run.new(RunConfig.new(1))
+	var run := Run.new(RunConfig.new(TestContent.real(), 1))
 
 	_play(run, Run.STEPS_PER_SECOND)
 
@@ -40,7 +40,7 @@ func test_sixty_steps_make_one_second_of_run_time() -> void:
 
 
 func test_five_minutes_of_steps_report_five_minutes_without_drift() -> void:
-	var run := Run.new(RunConfig.new(1))
+	var run := Run.new(RunConfig.new(TestContent.real(), 1))
 
 	_play(run, 5 * 60 * Run.STEPS_PER_SECOND)
 
@@ -51,8 +51,8 @@ func test_five_minutes_of_steps_report_five_minutes_without_drift() -> void:
 ## read anything outside its seed and inputs would drift apart here. Nothing
 ## reads the seed yet; that starts with admirer spawns in ticket 04.
 func test_the_same_seed_and_inputs_produce_identical_snapshots() -> void:
-	var first := Run.new(RunConfig.new(12345))
-	var second := Run.new(RunConfig.new(12345))
+	var first := Run.new(RunConfig.new(TestContent.real(), 12345))
+	var second := Run.new(RunConfig.new(TestContent.real(), 12345))
 
 	var first_snapshots := _play(first, 10 * Run.STEPS_PER_SECOND)
 	var second_snapshots := _play(second, 10 * Run.STEPS_PER_SECOND)
@@ -64,7 +64,7 @@ func test_the_same_seed_and_inputs_produce_identical_snapshots() -> void:
 
 
 func test_a_snapshot_is_a_copy_that_does_not_change_the_run() -> void:
-	var run := Run.new(RunConfig.new(1))
+	var run := Run.new(RunConfig.new(TestContent.real(), 1))
 	run.step(Run.TIMESTEP, Vector2.ZERO)
 
 	var snapshot := run.snapshot()
