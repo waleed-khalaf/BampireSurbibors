@@ -47,11 +47,9 @@ func test_five_minutes_of_steps_report_five_minutes_without_drift() -> void:
 	assert_float(run.snapshot().time).is_equal_approx(300.0, 0.000001)
 
 
-## For now this guards the harness rather than the rules: the snapshot holds
-## only time and tick, and nothing yet reads the seed or the move direction,
-## so different seeds would also pass. It starts to bite as soon as the
-## snapshot gains something that depends on them (Shireen's position in
-## ticket 02, admirer spawns in ticket 04).
+## Shireen's position and facing depend on the scripted input, so a Run that
+## read anything outside its seed and inputs would drift apart here. Nothing
+## reads the seed yet; that starts with admirer spawns in ticket 04.
 func test_the_same_seed_and_inputs_produce_identical_snapshots() -> void:
 	var first := Run.new(RunConfig.new(12345))
 	var second := Run.new(RunConfig.new(12345))

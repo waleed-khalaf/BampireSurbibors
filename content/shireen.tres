@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="ShireenData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/content/shireen_data.gd" id="1_shireen"]
+
+[resource]
+script = ExtResource("1_shireen")
+move_speed = 90.0

@@ -21,6 +21,8 @@ Domain terms for *Habibi, Get Closer*. Use these words in code, issues and docs.
 | **Treasure Camel** | A runaway camel (~2 per run) that drops a golden lamp when caught. | |
 | **Passive** | A stat item from a lamp, rank 1–3: Comfy Slippers, Kohl Eyeliner, Big Hair, Oud Perfume, Gold Bangles. | item, relic |
 | **Karkadeh tea** | A rare ground pickup that restores Patience. | health potion |
+| **Prop** | Decorative scenery on the sand: palm trees, a Lada taxi and so on. Exists only in the view, so it never blocks Shireen. | obstacle, scenery object |
+| **Facing** | The direction Shireen last moved in, any of 8. It stays the same while she stands still and aims the Assaya Cane. Her sprite only mirrors left or right. | heading, orientation |
 | **Run** | One 5-minute attempt, from weapon select to the end screen. | level, stage, round |
 | **Run simulation** | The headless, deterministic module that holds every gameplay rule for a run. Advanced with `step`, read through its state snapshot and events. The project's single test seam (ADR-0001). | game manager, world |
 | **Behavior** | The small class that gives a weapon, ability, admirer, passive or the boss its logic, picked by ID from its data file. | script, controller |
