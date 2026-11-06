@@ -1,7 +1,5 @@
 # Habibi, Get Closer: demo
 
-Status: ready-for-agent
-
 Numbers, content tables and tone rules live in `docs/design.md`. Vocabulary follows `GLOSSARY.md`. The architecture decision is in `docs/adr/0001-run-simulation-seam.md`.
 
 ## Problem Statement
@@ -201,5 +199,5 @@ Under the hood, every gameplay rule lives in one headless, deterministic **Run s
 - **Tone rules are part of acceptance** (design doc §1): admirers are archetypes of wealth and status, with no humor about bodies, ethnicity or religion, no religious imagery, and nothing menacing or sexual. Art, barks and screens are checked against these rules.
 - **The weapon pools are drafts** pending the user's review (design doc §6). Expect value and ability tweaks before or during milestone 5. The data-driven model makes this cheap.
 - **First cut** if time runs short: the Falconer.
-- **Build order** (design doc §14) still applies. The work is broken into 26 tickets in `.scratch/demo/issues/`, mirrored as GitHub issues. Tickets 01–08 make up the first playable.
+- **Build order** (design doc §14) still applies. The work is broken into tickets tracked as [GitHub issues](https://github.com/waleed-khalaf/BampireSurbibors/issues), each titled `NN: <name>`. Tickets 01–08 make up the first playable.
 - The user has zero Godot experience. Explanations in the code and commits should say *why*, and the user plays each milestone with F5 before the next begins.
