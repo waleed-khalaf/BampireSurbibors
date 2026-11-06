@@ -36,6 +36,8 @@ From this folder, in PowerShell or a Command Prompt:
 
 This runs the whole GdUnit4 suite headless (no window) and prints `All tests passed.` with exit code 0, or `Tests FAILED` with a non-zero code. It finds Godot through the `GODOT_BIN` environment variable, then `godot` on your PATH, then the winget install folder. HTML and XML reports go to `reports/` (gitignored).
 
+Several test runs can go at once, for example agents each working in their own git worktree: a run only writes inside its own folder. Two runs started in the same folder take turns; the second prints `Another test run is using this folder. Waiting for it to finish...` and starts when the first is done.
+
 You can also run tests in the editor from the **GdUnit** panel.
 
 ## Draw or edit sprites
