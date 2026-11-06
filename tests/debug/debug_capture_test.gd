@@ -143,11 +143,16 @@ func test_state_txt_holds_the_last_20_log_lines() -> void:
 	for i: int in range(1, 26):
 		print("capture test line %02d" % i)
 
-	var state: String = _read_state(service.capture("f12"))
+	var log_lines: PackedStringArray = _log_lines(_read_state(service.capture("f12")))
 
-	assert_str(state).contains("capture test line 25")
-	assert_str(state).contains("capture test line 06")
-	assert_str(state).not_contains("capture test line 05")
+	# The history is shared with whatever else prints before the capture
+	# (GdUnit, the engine), so the dump need not be exactly lines 06..25. What
+	# must hold: it has 20 entries, and this test's lines are the newest ones,
+	# in order, with none missing in between.
+	assert_int(log_lines.size()).is_equal(20)
+	var numbers: Array[int] = _test_line_numbers(log_lines)
+	assert_array(numbers).override_failure_message("none of the test's lines made it into state.txt").is_not_empty()
+	assert_array(numbers).is_equal(range(26 - numbers.size(), 26))
 
 
 func test_state_txt_holds_recent_warnings_apart_from_log_lines() -> void:
@@ -161,3 +166,23 @@ func test_state_txt_holds_recent_warnings_apart_from_log_lines() -> void:
 	# 30 prints would push it out of a shared history; it has its own.
 	var errors_section: String = state.substr(state.find("== Last 20 errors and warnings"))
 	assert_str(errors_section).contains("WARNING: capture test warning")
+
+
+## The entries under the "Last 20 log lines" heading of a state.txt: every
+## line after the heading up to the blank line that ends the section.
+func _log_lines(state: String) -> PackedStringArray:
+	var section: String = state.substr(state.find("== Last 20 log lines"))
+	var entries: PackedStringArray = section.split("\n").slice(1)
+	return entries.slice(0, entries.find(""))
+
+
+## The numbers of this suite's own "capture test line NN" entries, in the
+## order they appear. Entries from anything else that printed are skipped.
+func _test_line_numbers(log_lines: PackedStringArray) -> Array[int]:
+	var pattern: RegEx = RegEx.create_from_string("capture test line (\\d+)$")
+	var numbers: Array[int] = []
+	for entry: String in log_lines:
+		var found: RegExMatch = pattern.search(entry)
+		if found != null:
+			numbers.append(found.get_string(1).to_int())
+	return numbers
