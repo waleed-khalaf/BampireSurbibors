@@ -4,7 +4,7 @@ extends RefCounted
 ## assert on it. Its fields can be written, but that only changes the copy,
 ## never the Run.
 ##
-## Later tickets add admirers, Patience, cash and so on.
+## Later tickets add Patience, cash and so on.
 
 ## Seconds of run time simulated so far (ticks × the fixed timestep).
 var time: float = 0.0
@@ -24,6 +24,15 @@ var shireen_facing: Vector2 = Vector2.RIGHT
 ## animation from it.
 var shireen_moving: bool = false
 
+## Every admirer in the run, in spawn order (oldest first).
+var admirers: Array[AdmirerSnapshot] = []
+
+## How many admirers are in the run. The debug capture's state dump reports
+## it (ticket 03).
+var admirer_count: int:
+	get:
+		return admirers.size()
+
 
 ## Plain-data form, handy for comparing two snapshots and for debug dumps.
 func to_dict() -> Dictionary[String, Variant]:
@@ -33,4 +42,6 @@ func to_dict() -> Dictionary[String, Variant]:
 		"shireen_position": shireen_position,
 		"shireen_facing": shireen_facing,
 		"shireen_moving": shireen_moving,
+		"admirer_count": admirer_count,
+		"admirers": admirers.map(func(admirer: AdmirerSnapshot) -> Dictionary: return admirer.to_dict()),
 	}

@@ -57,6 +57,13 @@ const SHIREEN_FRAMES: Array[Dictionary] = [
 	{"bob": -1, "hip": 0, "step": 0, "glint": 1},
 ]
 
+## The Dowry Uncle's sheet: one row of 32×32 frames. A 2-frame walk.
+## Keep art/README.md in sync if this changes.
+const UNCLE_FRAMES: Array[Dictionary] = [
+	{"bob": 0, "step": 1},  # Left foot forward.
+	{"bob": -1, "step": 2},  # Right foot forward, body up 1 px.
+]
+
 var _colors: Dictionary[String, Color] = {}
 var _force: bool = false
 ## Set when anything goes wrong, so the script exits with code 1 and
@@ -72,6 +79,7 @@ func _init() -> void:
 	_save_image(_draw_palette(), "res://art/palette.png")
 	_save_text(_palette_gpl(), "res://art/palette.gpl")
 	_save_image(_draw_shireen_sheet(), "res://art/shireen/shireen.png")
+	_save_image(_draw_uncle_sheet(), "res://art/admirers/dowry_uncle.png")
 	_save_image(_draw_sand_tile(), "res://art/world/sand.png")
 	_save_image(_draw_palm_tree(), "res://art/props/palm_tree.png")
 	_save_image(_draw_lada_taxi(), "res://art/props/lada_taxi.png")
@@ -207,6 +215,73 @@ func _draw_shireen(canvas: Canvas, bob: int, hip: int, step: int, glint: int) ->
 	canvas.ellipse(16.5, 7 + bob, 5.5, 3.5, c("hair"), 7 + bob)
 	canvas.hline(14, 19, 5 + bob, c("gold"))
 	canvas.px(17, 5 + bob, c("gold_light"))
+
+	canvas.outline(c("ink"))
+	canvas.ellipse(16, 30, 7, 1.6, c("sand_dark"), 999, true)
+
+
+# --- Admirers ---------------------------------------------------------------
+
+func _draw_uncle_sheet() -> Image:
+	var image := Image.create_empty(FRAME_SIZE.x * UNCLE_FRAMES.size(), FRAME_SIZE.y, false, Image.FORMAT_RGBA8)
+	for i: int in UNCLE_FRAMES.size():
+		var canvas := Canvas.new(image, Vector2i(FRAME_SIZE.x * i, 0), FRAME_SIZE)
+		_draw_uncle(canvas, UNCLE_FRAMES[i].bob, UNCLE_FRAMES[i].step)
+	return image
+
+
+## The Dowry Uncle facing right (the game mirrors him to face left): a
+## dignified older gentleman in a white thobe and a red-checked ghutra with a
+## black agal, a neat grey beard, a gold watch, and the briefcase with the
+## dowry offer. Feet at y = 29, like Shireen. [param bob] lifts his upper
+## body, [param step] picks which foot is forward (1 left, 2 right).
+func _draw_uncle(canvas: Canvas, bob: int, step: int) -> void:
+	# Ghutra falling behind his shoulders.
+	canvas.rect(10, 9 + bob, 5, 8, c("car_white"))
+	canvas.vline(10, 10 + bob, 16 + bob, c("chrome"))
+
+	# Long white thobe, slightly wider at the hem.
+	for i: int in 14:
+		var y: int = 15 + i
+		var half: int = 5 + (1 if i > 8 else 0)
+		canvas.hline(16 - half, 15 + half, y, c("car_white"))
+		canvas.px(16 - half, y, c("chrome"))
+		canvas.px(16 - half + 1, y, c("chrome"))
+	# The button placket down his front.
+	canvas.vline(18, 16 + bob, 21, c("chrome"))
+
+	# Sandals peeking out under the hem, one foot ahead of the other.
+	var back_foot: int = 12 if step == 1 else 14
+	var front_foot: int = 19 if step == 1 else 17
+	canvas.rect(back_foot, 29, 3, 1, c("trunk_dark"))
+	canvas.rect(front_foot, 29, 3, 1, c("trunk"))
+
+	# Face, turned to the right, framed by the ghutra.
+	canvas.ellipse(16, 9 + bob, 5.5, 5.5, c("car_white"))
+	canvas.ellipse(17.5, 10 + bob, 3, 3.5, c("skin"))
+	canvas.px(15, 10 + bob, c("skin_shadow"))
+	canvas.px(19, 9 + bob, c("ink"))  # Eye.
+	canvas.hline(18, 20, 8 + bob, c("car_gray"))  # Brow.
+	# Neat grey beard and moustache.
+	canvas.hline(17, 20, 12 + bob, c("car_gray"))
+	canvas.hline(17, 19, 13 + bob, c("car_gray"))
+	canvas.px(20, 11 + bob, c("chrome"))
+	# Red checks on the ghutra.
+	for check: Vector2i in [Vector2i(12, 6), Vector2i(14, 5), Vector2i(12, 9), Vector2i(11, 12), Vector2i(13, 14), Vector2i(12, 16)]:
+		canvas.px(check.x, check.y + bob, c("rose"))
+	# Black agal: two cords round the crown.
+	canvas.hline(12, 20, 4 + bob, c("hair"))
+	canvas.hline(12, 20, 5 + bob, c("hair_light"))
+
+	# Front arm down, holding the briefcase, with a gold watch.
+	canvas.rect(19, 16 + bob, 2, 6, c("car_white"))
+	canvas.vline(19, 16 + bob, 21 + bob, c("chrome"))
+	canvas.px(20, 21 + bob, c("gold"))
+	canvas.px(20, 22 + bob, c("skin"))
+	canvas.hline(20, 23, 22 + bob, c("trunk_dark"))  # Handle.
+	canvas.rect(19, 23 + bob, 7, 5, c("trunk"))
+	canvas.hline(19, 25, 27 + bob, c("trunk_dark"))
+	canvas.px(22, 24 + bob, c("gold_light"))  # Clasp.
 
 	canvas.outline(c("ink"))
 	canvas.ellipse(16, 30, 7, 1.6, c("sand_dark"), 999, true)

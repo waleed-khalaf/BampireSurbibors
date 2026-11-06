@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="AdmirerData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/content/admirer_data.gd" id="1_admirer"]
+
+[resource]
+script = ExtResource("1_admirer")
+id = &"dowry_uncle"
+max_hp = 30.0
+move_speed = 40.0
+drain_per_second = 10.0
+cash = 2
+body_radius = 7.0
+behavior_id = &"chase"

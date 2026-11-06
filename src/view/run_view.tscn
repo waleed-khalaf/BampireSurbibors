@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://src/view/run_view.gd" id="1_runview"]
 [ext_resource type="Script" path="res://src/view/endless_sand.gd" id="2_sand"]
@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://src/view/prop_scatter.gd" id="4_props"]
 [ext_resource type="Script" path="res://src/view/shireen_sprite.gd" id="5_shireen"]
 [ext_resource type="Texture2D" path="res://art/shireen/shireen.png" id="6_shireentex"]
+[ext_resource type="Script" path="res://src/view/admirer_renderer.gd" id="7_admirers"]
 
 [node name="RunView" type="Node2D"]
 script = ExtResource("1_runview")
@@ -30,6 +31,11 @@ centered = false
 offset = Vector2(-16, -30)
 hframes = 6
 script = ExtResource("5_shireen")
+
+[node name="Admirers" type="Node2D" parent="World"]
+unique_name_in_owner = true
+y_sort_enabled = true
+script = ExtResource("7_admirers")
 
 [node name="Camera" type="Camera2D" parent="."]
 unique_name_in_owner = true

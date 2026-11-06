@@ -25,16 +25,30 @@ var _shireen_position: Vector2 = Vector2.ZERO
 var _shireen_facing: Vector2 = Vector2.RIGHT
 var _shireen_moving: bool = false
 
+var _crowd: AdmirerCrowd
+## Null when the content has no spawn ramp (some test content): no admirers.
+var _spawn_director: SpawnDirector
+## One behavior object per admirer type, shared by all admirers of that type.
+var _behaviors: Dictionary[StringName, AdmirerBehavior] = {}
+var _last_admirer_id: int = 0
+
 
 func _init(config: RunConfig) -> void:
 	assert(config.play_area.x > 0.0 and config.play_area.y > 0.0, "Run: play_area must be positive")
 	assert(config.content.is_valid(), "Run: " + config.content.error_report())
 	_config = config
-	_shireen_speed = config.content.shireen.move_speed
-	# The Run's private RNG. Nothing uses it yet; admirer spawns, card offers
-	# and lamp rolls will draw from it so a seed replays a whole run.
+	var content: ContentRegistry = config.content
+	_shireen_speed = content.shireen.move_speed
+	# The Run's private RNG. Every random choice (where admirers spawn, later
+	# card offers and lamp rolls) draws from it, so a seed replays a whole run.
 	_rng = RandomNumberGenerator.new()
 	_rng.seed = config.rng_seed
+
+	_crowd = AdmirerCrowd.new(content.shireen.body_radius, content.max_admirer_radius())
+	for id: StringName in content.admirers:
+		_behaviors[id] = content.create_admirer_behavior(content.admirers[id])
+	if content.spawn_ramp != null:
+		_spawn_director = SpawnDirector.new(content.spawn_ramp, config.play_area, _rng)
 
 
 ## Advances the run by one fixed step.
@@ -43,6 +57,37 @@ func _init(config: RunConfig) -> void:
 func step(delta: float, move_direction: Vector2) -> void:
 	assert(is_equal_approx(delta, TIMESTEP), "Run.step: expected the fixed timestep %f, got %f" % [TIMESTEP, delta])
 	_tick += 1
+	_move_shireen(delta, move_direction)
+	_crowd.step(delta, _shireen_position)
+	# Spawn last, so a new admirer shows up exactly where the director put
+	# him, just off-screen, before he takes his first step.
+	_spawn_admirers(delta)
+
+
+## Run time comes from the tick count rather than summing floats, so it never
+## drifts and two identical runs always report exactly the same value.
+func snapshot() -> RunSnapshot:
+	var snap := RunSnapshot.new()
+	snap.time = _time()
+	snap.tick = _tick
+	snap.shireen_position = _shireen_position
+	snap.shireen_facing = _shireen_facing
+	snap.shireen_moving = _shireen_moving
+	for admirer: Admirer in _crowd.admirers:
+		var copy := AdmirerSnapshot.new()
+		copy.id = admirer.id
+		copy.type_id = admirer.type.id
+		copy.position = admirer.position
+		copy.facing = admirer.facing
+		snap.admirers.append(copy)
+	return snap
+
+
+func _time() -> float:
+	return _tick * TIMESTEP
+
+
+func _move_shireen(delta: float, move_direction: Vector2) -> void:
 	# Cap at length 1 so a diagonal like (1, 1) is no faster than straight.
 	var direction: Vector2 = move_direction.limit_length(1.0)
 	_shireen_position += direction * _shireen_speed * delta
@@ -52,13 +97,15 @@ func step(delta: float, move_direction: Vector2) -> void:
 		_shireen_facing = direction.normalized()
 
 
-## Run time comes from the tick count rather than summing floats, so it never
-## drifts and two identical runs always report exactly the same value.
-func snapshot() -> RunSnapshot:
-	var snap := RunSnapshot.new()
-	snap.time = _tick * TIMESTEP
-	snap.tick = _tick
-	snap.shireen_position = _shireen_position
-	snap.shireen_facing = _shireen_facing
-	snap.shireen_moving = _shireen_moving
-	return snap
+func _spawn_admirers(delta: float) -> void:
+	if _spawn_director == null:
+		return
+	var count: int = _spawn_director.spawns_due(delta, _time(), _crowd.size())
+	var type: AdmirerData = _config.content.admirers[_spawn_director.admirer_id()]
+	for i: int in count:
+		_last_admirer_id += 1
+		var position: Vector2 = _spawn_director.spawn_position(_shireen_position)
+		var admirer := Admirer.new(_last_admirer_id, type, _behaviors[type.id], position)
+		# Face her from the start, so he doesn't walk in backwards for a frame.
+		admirer.facing = (_shireen_position - position).normalized()
+		_crowd.add(admirer)
