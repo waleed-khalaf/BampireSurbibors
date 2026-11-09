@@ -9,8 +9,24 @@ extends RefCounted
 ##
 ## Usage:
 ##     var run := Run.new(RunConfig.new(ContentRegistry.load_default(), 42))
-##     run.step(Run.TIMESTEP, Vector2.RIGHT)
+##     var events := run.step(Run.TIMESTEP, Vector2.RIGHT)
 ##     print(run.snapshot().time)
+
+## Where a run is in its life. The level-up and lamp pauses join in later
+## tickets.
+enum Phase {
+	PLAYING,
+	## Over for good: steps do nothing any more.
+	ENDED,
+}
+
+## How a run ended. Victory joins with the Yacht Sheikh (ticket 19).
+enum Outcome {
+	## Still being played.
+	NONE,
+	## Shireen's Patience ran out: "You said yes."
+	DEFEAT,
+}
 
 ## The fixed simulation rate. The view turns real frame time into steps of
 ## exactly this size, so a run plays out the same on fast and slow machines.
@@ -24,6 +40,14 @@ var _shireen_speed: float
 var _shireen_position: Vector2 = Vector2.ZERO
 var _shireen_facing: Vector2 = Vector2.RIGHT
 var _shireen_moving: bool = false
+var _max_patience: float
+var _patience: float
+var _phase: Phase = Phase.PLAYING
+var _outcome: Outcome = Outcome.NONE
+## The type of the admirer who touched her most recently, or empty if nobody
+## has yet. On a defeat it's the one who took the last of her Patience: who
+## she said yes to.
+var _last_touching_type: StringName = &""
 
 var _crowd: AdmirerCrowd
 ## Null when the content has no spawn ramp (some test content): no admirers.
@@ -39,6 +63,8 @@ func _init(config: RunConfig) -> void:
 	_config = config
 	var content: ContentRegistry = config.content
 	_shireen_speed = content.shireen.move_speed
+	_max_patience = content.shireen.max_patience
+	_patience = _max_patience
 	# The Run's private RNG. Every random choice (where admirers spawn, later
 	# card offers and lamp rolls) draws from it, so a seed replays a whole run.
 	_rng = RandomNumberGenerator.new()
@@ -51,17 +77,30 @@ func _init(config: RunConfig) -> void:
 		_spawn_director = SpawnDirector.new(content.spawn_ramp, config.play_area, _rng)
 
 
-## Advances the run by one fixed step.
+## Advances the run by one fixed step and returns what happened during it,
+## in order (most steps: nothing).
 ## [param delta] should be [constant TIMESTEP]; the view guarantees it.
 ## [param move_direction] is the player's input: which way Shireen walks.
-func step(delta: float, move_direction: Vector2) -> void:
+func step(delta: float, move_direction: Vector2) -> Array[RunEvent]:
 	assert(is_equal_approx(delta, TIMESTEP), "Run.step: expected the fixed timestep %f, got %f" % [TIMESTEP, delta])
+	var events: Array[RunEvent] = []
+	# An ended run stays exactly as it ended: the clock, Shireen and the
+	# crowd all stop, so the end screen's numbers can't change under it.
+	if _phase == Phase.ENDED:
+		return events
 	_tick += 1
 	_move_shireen(delta, move_direction)
 	_crowd.step(delta, _shireen_position)
+	_drain_patience(delta)
+	if _patience <= 0.0:
+		_phase = Phase.ENDED
+		_outcome = Outcome.DEFEAT
+		events.append(RunEndedEvent.new(_outcome, _last_touching_type))
+		return events
 	# Spawn last, so a new admirer shows up exactly where the director put
 	# him, just off-screen, before he takes his first step.
 	_spawn_admirers(delta)
+	return events
 
 
 ## Run time comes from the tick count rather than summing floats, so it never
@@ -73,14 +112,30 @@ func snapshot() -> RunSnapshot:
 	snap.shireen_position = _shireen_position
 	snap.shireen_facing = _shireen_facing
 	snap.shireen_moving = _shireen_moving
+	snap.patience = _patience
+	snap.max_patience = _max_patience
+	snap.phase = _phase
+	snap.outcome = _outcome
+	snap.last_touching_type = _last_touching_type
 	for admirer: Admirer in _crowd.admirers:
 		var copy := AdmirerSnapshot.new()
 		copy.id = admirer.id
 		copy.type_id = admirer.type.id
 		copy.position = admirer.position
 		copy.facing = admirer.facing
+		copy.touching = admirer.touching
 		snap.admirers.append(copy)
 	return snap
+
+
+## "playing" or "ended", for debug dumps.
+static func phase_name(phase: Phase) -> String:
+	return Phase.find_key(phase).to_lower()
+
+
+## "none" or "defeat", for debug dumps.
+static func outcome_name(outcome: Outcome) -> String:
+	return Outcome.find_key(outcome).to_lower()
 
 
 func _time() -> float:
@@ -95,6 +150,21 @@ func _move_shireen(delta: float, move_direction: Vector2) -> void:
 	# Standing still keeps the old facing instead of resetting it.
 	if _shireen_moving:
 		_shireen_facing = direction.normalized()
+
+
+## Every admirer touching Shireen drains her Patience at his type's rate.
+## They take their turns in spawn order, and the draining stops the moment
+## nothing is left. So when it runs out, the last-touching type is the
+## admirer who took the last of it.
+func _drain_patience(delta: float) -> void:
+	for admirer: Admirer in _crowd.admirers:
+		if not admirer.touching:
+			continue
+		_patience -= admirer.type.drain_per_second * delta
+		_last_touching_type = admirer.type.id
+		if _patience <= 0.0:
+			_patience = 0.0
+			return
 
 
 func _spawn_admirers(delta: float) -> void:

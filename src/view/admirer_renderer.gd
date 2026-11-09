@@ -113,15 +113,26 @@ func _new_sprite() -> PooledSprite:
 func _sheet_for(type_id: StringName) -> Texture2D:
 	if _sheets.has(type_id):
 		return _sheets[type_id]
-	var path: String = SHEETS_DIR.path_join("%s.png" % type_id)
-	var texture: Texture2D = null
-	# load() goes through Godot's import system, so this also works in an
-	# exported game, where the PNG itself is no longer on disk. The exists
-	# check first keeps a missing sheet to our one warning, instead of
-	# load()'s own error on top of it.
-	if ResourceLoader.exists(path):
-		texture = load(path)
+	var texture: Texture2D = load_sheet(type_id)
 	if texture == null:
-		push_warning("No sprite sheet for admirer type \"%s\": expected %s (see art/README.md)." % [type_id, path])
+		push_warning("No sprite sheet for admirer type \"%s\": expected %s (see art/README.md)." % [type_id, sheet_path(type_id)])
 	_sheets[type_id] = texture
 	return texture
+
+
+## Where an admirer type's sheet is expected: art/admirers/<type id>.png.
+static func sheet_path(type_id: StringName) -> String:
+	return SHEETS_DIR.path_join("%s.png" % type_id)
+
+
+## Loads an admirer type's sheet, or returns null if there is none. The
+## "You said yes." screen uses it too, for the wedding photo.
+static func load_sheet(type_id: StringName) -> Texture2D:
+	var path: String = sheet_path(type_id)
+	# load() goes through Godot's import system, so this also works in an
+	# exported game, where the PNG itself is no longer on disk. The exists
+	# check first keeps a missing sheet quiet here, instead of load()'s own
+	# error; callers decide whether it is worth a warning.
+	if not ResourceLoader.exists(path):
+		return null
+	return load(path)

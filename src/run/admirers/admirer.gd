@@ -31,6 +31,10 @@ var facing: Vector2 = Vector2.RIGHT
 ## max_hp; weapons lower it from ticket 06.
 var hp: float = 0.0
 
+## Whether his body is against Shireen's after the latest step. The crowd
+## works it out (AdmirerCrowd.step) and the Run drains her Patience by it.
+var touching: bool = false
+
 
 func _init(p_id: int, p_type: AdmirerData, p_behavior: AdmirerBehavior, p_position: Vector2) -> void:
 	id = p_id

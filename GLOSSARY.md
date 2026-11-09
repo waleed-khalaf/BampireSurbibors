@@ -10,6 +10,7 @@ Domain terms for *Habibi, Get Closer*. Use these words in code, issues and docs.
 | **Dazzle** | What happens when an admirer's HP reaches 0: he swoons, drops cash and leaves. *Dazzle power* = damage. | kill, die, death |
 | **Patience** | Shireen's health. Drained per second by touching admirers. | HP (for Shireen), health, lives |
 | **Drain** | Patience lost per second while an admirer touches Shireen. | contact damage |
+| **Touching** | An admirer whose body circle is against Shireen's (within a pixel). Only touching admirers drain Patience. The **last-touching** type is the admirer type that took the last of her Patience; she appears next to him in the wedding photo. | colliding, hitting |
 | **Cash** | XP pickups dropped by dazzled admirers. Fills the level bar. | XP gems, exp |
 | **Level-up** | A pause showing 3 cards for the run's weapon. | |
 | **Weapon** | One of 5 dance moves: Zills, Hip Shimmy, Veil Twirl, Assaya Cane, Darbuka Drop. Chosen at the start; exactly one per run. | attack, skill |

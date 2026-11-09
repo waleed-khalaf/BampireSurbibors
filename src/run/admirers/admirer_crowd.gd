@@ -8,6 +8,9 @@ extends RefCounted
 ## body is moved back to its edge. That's what makes them spread out around
 ## her instead of stacking into one blob (spec story 50). There is no physics
 ## engine; a SpatialGrid keeps it cheap with hundreds of admirers.
+##
+## The crowd also says who is touching Shireen once everyone has moved (see
+## Admirer.touching). What a touch costs her is the Run's business.
 
 ## How many times per step the overlaps are pushed apart. Fixing one pair can
 ## push into the next, but with the give-way rule below one pass already keeps
@@ -25,6 +28,12 @@ const GIVE_WAY: float = 8.0
 ## They're split along a direction picked from their ids, so the result is
 ## still the same every run.
 const GOLDEN_ANGLE: float = 2.39996323
+
+## An admirer touches Shireen when his body circle is within this many pixels
+## of hers. An admirer pressed against her stands exactly on her edge, give or
+## take float rounding, and one jostled by his neighbours a fraction of a pixel
+## outside it. On screen both look like contact, so both count.
+const TOUCH_SLACK: float = 1.0
 
 var admirers: Array[Admirer] = []
 
@@ -58,7 +67,8 @@ func size() -> int:
 	return admirers.size()
 
 
-## Moves every admirer by his behavior, then pushes the crowd apart.
+## Moves every admirer by his behavior, pushes the crowd apart, then marks
+## who ended up touching Shireen.
 func step(delta: float, shireen_position: Vector2) -> void:
 	var count: int = admirers.size()
 	_positions.resize(count)
@@ -74,7 +84,10 @@ func step(delta: float, shireen_position: Vector2) -> void:
 		_separate(shireen_position)
 
 	for i: int in count:
-		admirers[i].position = _positions[i]
+		var admirer: Admirer = admirers[i]
+		admirer.position = _positions[i]
+		var reach: float = _radii[i] + _shireen_radius + TOUCH_SLACK
+		admirer.touching = _positions[i].distance_squared_to(shireen_position) <= reach * reach
 
 
 ## One pass over every overlapping pair, then Shireen's body.
