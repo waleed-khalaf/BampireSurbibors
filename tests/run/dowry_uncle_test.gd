@@ -1,6 +1,10 @@
 extends GdUnitTestSuite
 ## Dowry Uncles arriving and chasing Shireen, checked through the Run seam
 ## (ADR-0001): build a Run, step it, look at the snapshot.
+##
+## The Uncles here are harmless (TestContent.harmless_uncle): they move
+## exactly like the real ones but drain no Patience, so a run lasts as long as
+## a test needs. What a touch costs is in patience_test.gd.
 
 ## Calibrated on the user's machine (2026-11-06, Godot 4.7.2 headless via
 ## run_tests.cmd). The timing tests measure what the view pays every frame: a
@@ -8,12 +12,16 @@ extends GdUnitTestSuite
 ## admirer. With 300 Uncles packed around Shireen that pair took 1,030–1,230 µs
 ## over a dozen runs, most of them near 1,080 (about 760 for the step and 320
 ## for the snapshot), with one spike to 1,840 while the machine was busy; the
-## strung-out crowd below took 1,005–1,230 µs. MEASURED_STEP_USEC is the
-## typical value. The budget allows about 3× that for noisy runs and is 20% of
-## a 60 Hz frame (16,667 µs), leaving the rest for weapons, pickups and
-## drawing. The tests print the time they measured; if one fails, find out
-## what got slower before raising the budget.
-const MEASURED_STEP_USEC: float = 1100.0
+## strung-out crowd below took 1,005–1,230 µs. Ticket 05 then added the touch
+## check and the Patience drain to every step: about 90 µs more with 300
+## Uncles (2026-11-09, on a day the machine ran slower overall: ~1,260 µs with
+## the code before it, ~1,350 after). MEASURED_STEP_USEC is the typical value
+## from the first calibration plus that share. The budget allows about 3× the
+## first calibration for noisy runs and is 20% of a 60 Hz frame (16,667 µs),
+## leaving the rest for weapons, pickups and drawing. The tests print the time
+## they measured; if one fails, find out what got slower before raising the
+## budget.
+const MEASURED_STEP_USEC: float = 1200.0
 const STEP_BUDGET_USEC: float = 3300.0
 
 
@@ -49,7 +57,7 @@ func _distance_outside(rect: Rect2, point: Vector2) -> float:
 
 
 func test_uncles_spawn_off_screen_while_shireen_walks_around() -> void:
-	var content := TestContent.steady_uncles(10.0)
+	var content := TestContent.steady_harmless_uncles(10.0)
 	var run := Run.new(RunConfig.new(content, 7))
 	var directions: Array[Vector2] = [Vector2.RIGHT, Vector2(1, 1), Vector2.UP, Vector2.ZERO, Vector2.LEFT]
 	var seen: Dictionary[int, bool] = {}
@@ -77,7 +85,7 @@ func test_uncles_spawn_off_screen_while_shireen_walks_around() -> void:
 
 ## The ring is all around her, not just one side.
 func test_uncles_arrive_from_every_side() -> void:
-	var run := Run.new(RunConfig.new(TestContent.uncle_crowd(200), 3))
+	var run := Run.new(RunConfig.new(TestContent.harmless_uncle_crowd(200), 3))
 	var sides: Dictionary[String, int] = {"left": 0, "right": 0, "above": 0, "below": 0}
 	var seen: Dictionary[int, bool] = {}
 
@@ -98,7 +106,7 @@ func test_uncles_arrive_from_every_side() -> void:
 
 
 func test_more_and_more_uncles_arrive_as_the_run_goes_on() -> void:
-	var run := Run.new(RunConfig.new(TestContent.real(), 11))
+	var run := Run.new(RunConfig.new(TestContent.real_with_harmless_uncles(), 11))
 
 	_stand(run, 60 * Run.STEPS_PER_SECOND)
 	var first_minute: int = run.snapshot().admirer_count
@@ -112,7 +120,7 @@ func test_more_and_more_uncles_arrive_as_the_run_goes_on() -> void:
 
 
 func test_the_crowd_stops_growing_at_the_cap() -> void:
-	var run := Run.new(RunConfig.new(TestContent.steady_uncles(50.0, 120), 5))
+	var run := Run.new(RunConfig.new(TestContent.steady_harmless_uncles(50.0, 120), 5))
 
 	_stand(run, 10 * Run.STEPS_PER_SECOND)
 
@@ -120,7 +128,7 @@ func test_the_crowd_stops_growing_at_the_cap() -> void:
 
 
 func test_an_uncle_walks_straight_at_shireen_at_his_speed() -> void:
-	var run := Run.new(RunConfig.new(TestContent.uncle_crowd(1), 9))
+	var run := Run.new(RunConfig.new(TestContent.harmless_uncle_crowd(1), 9))
 	run.step(Run.TIMESTEP, Vector2.ZERO)
 	var start: Vector2 = run.snapshot().admirers[0].position
 
@@ -135,7 +143,7 @@ func test_an_uncle_walks_straight_at_shireen_at_his_speed() -> void:
 
 
 func test_uncles_close_the_distance_and_crowd_around_shireen() -> void:
-	var run := Run.new(RunConfig.new(TestContent.uncle_crowd(30), 21))
+	var run := Run.new(RunConfig.new(TestContent.harmless_uncle_crowd(30), 21))
 
 	# The far corners of the ring are ~400 px away; at 40 px/s that's 10 s.
 	_stand(run, 15 * Run.STEPS_PER_SECOND)
@@ -145,7 +153,7 @@ func test_uncles_close_the_distance_and_crowd_around_shireen() -> void:
 
 
 func test_uncles_follow_shireen_when_she_walks_away() -> void:
-	var run := Run.new(RunConfig.new(TestContent.uncle_crowd(1), 4))
+	var run := Run.new(RunConfig.new(TestContent.harmless_uncle_crowd(1), 4))
 	run.step(Run.TIMESTEP, Vector2.ZERO)
 	_stand(run, 10 * Run.STEPS_PER_SECOND)
 
@@ -158,7 +166,7 @@ func test_uncles_follow_shireen_when_she_walks_away() -> void:
 
 
 func test_a_dense_crowd_spreads_out_instead_of_stacking() -> void:
-	var run := Run.new(RunConfig.new(TestContent.uncle_crowd(150), 13))
+	var run := Run.new(RunConfig.new(TestContent.harmless_uncle_crowd(150), 13))
 	# 1.5 s for all of them to arrive, ~10 s to walk in from the far corners,
 	# and some more to press in around her.
 	_stand(run, 20 * Run.STEPS_PER_SECOND)
@@ -186,7 +194,7 @@ func test_a_dense_crowd_spreads_out_instead_of_stacking() -> void:
 
 
 func test_three_hundred_uncles_step_within_the_time_budget() -> void:
-	var run := Run.new(RunConfig.new(TestContent.uncle_crowd(300), 17))
+	var run := Run.new(RunConfig.new(TestContent.harmless_uncle_crowd(300), 17))
 	# Let them all arrive (3 s) and pack in first: a dense crowd is the slow
 	# case for separation.
 	_stand(run, 15 * Run.STEPS_PER_SECOND)
@@ -211,9 +219,9 @@ func test_three_hundred_uncles_step_within_the_time_budget() -> void:
 ## so she would have to walk for three minutes. To keep the test quick a
 ## stand-in walks at the fastest speed the content allows (400 px/s), and the
 ## spawn ramp starts from zero so that few Uncles arrive during the walk and
-## most of them after she stops. The Uncles are the real ones.
+## most of them after she stops. The Uncles move like the real ones.
 func test_a_strung_out_crowd_pressing_in_steps_within_the_time_budget() -> void:
-	var content := TestContent.uncles_chasing(TestContent.shireen_with_speed(400.0), 0.0, 6.0, 300)
+	var content := TestContent.harmless_uncles_chasing(TestContent.shireen_with_speed(400.0), 0.0, 6.0, 300)
 	var run := Run.new(RunConfig.new(content, 23))
 	# 40 s of sprinting leaves ~80 Uncles strung out over ~12,000 px...
 	for i: int in 40 * Run.STEPS_PER_SECOND:
@@ -246,9 +254,9 @@ func test_a_strung_out_crowd_pressing_in_steps_within_the_time_budget() -> void:
 ## The seed decides where admirers arrive, and nothing else does: the same
 ## seed gives the same crowd, a different seed a different one.
 func test_the_seed_decides_where_uncles_arrive() -> void:
-	var first := Run.new(RunConfig.new(TestContent.real(), 99))
-	var same := Run.new(RunConfig.new(TestContent.real(), 99))
-	var other := Run.new(RunConfig.new(TestContent.real(), 100))
+	var first := Run.new(RunConfig.new(TestContent.real_with_harmless_uncles(), 99))
+	var same := Run.new(RunConfig.new(TestContent.real_with_harmless_uncles(), 99))
+	var other := Run.new(RunConfig.new(TestContent.real_with_harmless_uncles(), 100))
 
 	for run: Run in [first, same, other]:
 		_stand(run, 5 * Run.STEPS_PER_SECOND)
@@ -258,7 +266,7 @@ func test_the_seed_decides_where_uncles_arrive() -> void:
 
 
 func test_the_snapshot_counts_the_admirers() -> void:
-	var run := Run.new(RunConfig.new(TestContent.uncle_crowd(25), 1))
+	var run := Run.new(RunConfig.new(TestContent.harmless_uncle_crowd(25), 1))
 	_stand(run, Run.STEPS_PER_SECOND)
 
 	var snapshot := run.snapshot()

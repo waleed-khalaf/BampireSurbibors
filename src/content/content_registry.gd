@@ -163,6 +163,7 @@ static func _describe(resource: Resource) -> String:
 func _validate() -> void:
 	if shireen != null:
 		_check_range("Shireen", "move_speed", shireen.move_speed, MIN_MOVE_SPEED, MAX_MOVE_SPEED, " px/s")
+		_check_range("Shireen", "max_patience", shireen.max_patience, 1.0, 10000.0, "")
 		_check_range("Shireen", "body_radius", shireen.body_radius, MIN_BODY_RADIUS, MAX_BODY_RADIUS, " px")
 
 	for admirer: AdmirerData in admirers.values():

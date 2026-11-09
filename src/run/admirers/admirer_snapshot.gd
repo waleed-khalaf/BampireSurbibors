@@ -16,7 +16,10 @@ var position: Vector2 = Vector2.ZERO
 ## The way he last walked, as a length-1 vector.
 var facing: Vector2 = Vector2.RIGHT
 
+## Whether he is touching Shireen, and so draining her Patience.
+var touching: bool = false
+
 
 ## Plain-data form, for comparing snapshots and for debug dumps.
 func to_dict() -> Dictionary[String, Variant]:
-	return {"id": id, "type": type_id, "position": position, "facing": facing}
+	return {"id": id, "type": type_id, "position": position, "facing": facing, "touching": touching}

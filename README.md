@@ -17,14 +17,14 @@ Press **F5** in the editor (or the ▶ button at the top right).
 | Fullscreen on/off | F11 | Yes |
 | Move | WASD or arrow keys | Yes |
 | Debug capture (dev builds) | F12 | Yes |
-| Accept | Enter | Ticket 05 (restart after "You said yes.") |
+| Accept | Enter | Yes: starts a new run from the "You said yes." screen |
 | Pause | Esc | Ticket 09 (title, weapon select and pause) |
 
-The keys are all mapped already. For now Shireen can walk around the endless sand while the run timer ticks up.
+The keys are all mapped already. For now Shireen walks around the endless sand while Dowry Uncles close in on her. Each Uncle touching her drains her **Patience** (the bar at the top left). When it runs out, the run ends on **"You said yes."** with a placeholder wedding photo and the run's stats, and Enter starts a new run. She has no weapon yet (ticket 06), so the only way to last is to keep moving.
 
 ## Report a bug
 
-While you play from the editor, the game saves a screenshot every 5 seconds to `debug_captures/rolling/` and keeps the newest 60 (about 5 minutes). When something looks wrong, press **F12**: "Debug capture saved" appears at the top left, and a folder like `debug_captures/2026-11-06_14-03-22_f12/` holds `screenshot.png` and `state.txt` (run time, Shireen's position, fps, the seed and the last log lines and errors). Then tell Claude what happened; it reads the captures before changing code. The folder is gitignored and Godot's FileSystem panel doesn't show it, so open it in Explorer. An exported debug build saves its captures to `%APPDATA%\Godot\app_userdata\Habibi, Get Closer\debug_captures\` instead (an exported game can't write into its own files), and exported release builds make no captures.
+While you play from the editor, the game saves a screenshot every 5 seconds to `debug_captures/rolling/` and keeps the newest 60 (about 5 minutes). When something looks wrong, press **F12**: "Debug capture saved" appears at the top left, and a folder like `debug_captures/2026-11-06_14-03-22_f12/` holds `screenshot.png` and `state.txt` (run time, Shireen's position and Patience, fps, the seed and the last log lines and errors). The game also saves one of these by itself the moment a run ends, in a folder ending in `_run-ended`. Then tell Claude what happened; it reads the captures before changing code. The folder is gitignored and Godot's FileSystem panel doesn't show it, so open it in Explorer. An exported debug build saves its captures to `%APPDATA%\Godot\app_userdata\Habibi, Get Closer\debug_captures\` instead (an exported game can't write into its own files), and exported release builds make no captures.
 
 ## Run the tests
 
@@ -46,7 +46,7 @@ The sprites in `art/` are code-drawn drafts for you to refine in LibreSprite. [a
 
 ## Tune the game
 
-Tunable numbers live in Godot Resource files under `content/`. Double-click one in Godot's FileSystem panel and edit it in the Inspector. For example, `content/shireen.tres` holds Shireen's move speed. The game checks the content when it starts and shows a message saying what to fix if a value is out of range.
+Tunable numbers live in Godot Resource files under `content/`. Double-click one in Godot's FileSystem panel and edit it in the Inspector. For example, `content/shireen.tres` holds Shireen's move speed and her Patience, and `content/admirers/dowry_uncle.tres` how much Patience an Uncle drains per second. The game checks the content when it starts and shows a message saying what to fix if a value is out of range.
 
 ## How the code is laid out
 
@@ -55,5 +55,5 @@ Tunable numbers live in Godot Resource files under `content/`. Double-click one 
 - `src/view/`: the **view**, the Godot scenes that draw the Run and feed it keyboard input. They hold no rules.
 - `src/debug/`: the **debug capture** service (the `DebugCapture` autoload). Systems add their state to `state.txt` with `DebugCapture.register_provider("Section", callable)`; `DebugCapture.capture("reason")` saves a snapshot from code.
 - `art/`: sprite sheets and the shared palette. `tools/sprite_generator/` draws the drafts.
-- `tests/`: GdUnit4 tests. Gameplay tests go through the Run only: build one from a seed, step it, check its snapshot. Content tests load data through the content registry and check what it accepts and rejects.
+- `tests/`: GdUnit4 tests. Gameplay tests go through the Run only: build one from a seed, step it, check its snapshot and the events its steps return. Content tests load data through the content registry and check what it accepts and rejects.
 - `addons/gdUnit4/`: the test framework (GdUnit4 v6.2.3), checked in so a fresh clone can run the tests.
