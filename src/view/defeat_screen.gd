@@ -30,17 +30,17 @@ func show_defeat(snapshot: RunSnapshot) -> void:
 	]
 	# Who she said yes to. Empty only if Patience ran out with nobody on her,
 	# which nothing in the game can do yet; then she's in the photo alone.
-	var groom: StringName = snapshot.last_touching_type
-	var sheet: Texture2D = AdmirerRenderer.load_sheet(groom) if groom != &"" else null
+	var last_touching_type: StringName = snapshot.last_touching_type
+	var sheet: Texture2D = AdmirerRenderer.load_sheet(last_touching_type) if last_touching_type != &"" else null
 	_photo_admirer.texture = sheet
 	_photo_admirer.hframes = AdmirerRenderer.WALK_FRAMES
 	_photo_admirer.visible = sheet != null
-	if groom == &"":
+	if last_touching_type == &"":
 		_caption.text = "Shireen"
 	else:
 		# "dowry_uncle" -> "Dowry Uncle". Admirer types have no display name
 		# of their own yet; the final end screens are ticket 25.
-		_caption.text = "Shireen & the %s" % String(groom).capitalize()
+		_caption.text = "Shireen & the %s" % String(last_touching_type).capitalize()
 	visible = true
 
 

@@ -130,12 +130,14 @@ func snapshot() -> RunSnapshot:
 
 ## "playing" or "ended", for debug dumps.
 static func phase_name(phase: Phase) -> String:
-	return Phase.find_key(phase).to_lower()
+	var key: String = Phase.find_key(phase)
+	return key.to_lower()
 
 
 ## "none" or "defeat", for debug dumps.
 static func outcome_name(outcome: Outcome) -> String:
-	return Outcome.find_key(outcome).to_lower()
+	var key: String = Outcome.find_key(outcome)
+	return key.to_lower()
 
 
 func _time() -> float:

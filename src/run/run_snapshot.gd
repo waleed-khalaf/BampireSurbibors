@@ -42,9 +42,12 @@ var outcome: Run.Outcome = Run.Outcome.NONE
 ## who took the last of her Patience: who she said yes to.
 var last_touching_type: StringName = &""
 
-## The run's stats so far, shown on the end screen. Nothing dazzles admirers
-## or drops cash yet, so both stay at 0 until tickets 06 and 07.
+## How many admirers Shireen has dazzled so far, shown on the end screen.
+## Nothing dazzles admirers yet, so it stays at 0 until ticket 06.
 var admirers_dazzled: int = 0
+
+## How much cash Shireen has collected so far, shown on the end screen.
+## Nothing drops cash yet, so it stays at 0 until ticket 07.
 var cash_collected: int = 0
 
 ## Every admirer in the run, in spawn order (oldest first).
