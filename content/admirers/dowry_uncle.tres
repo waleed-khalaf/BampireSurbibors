@@ -10,4 +10,6 @@ move_speed = 40.0
 drain_per_second = 10.0
 cash = 2
 body_radius = 7.0
+swoon_seconds = 0.6
+leave_speed = 60.0
 behavior_id = &"chase"

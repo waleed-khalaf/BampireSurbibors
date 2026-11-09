@@ -56,6 +56,9 @@ var _spawn_director: SpawnDirector
 var _behaviors: Dictionary[StringName, AdmirerBehavior] = {}
 var _last_admirer_id: int = 0
 
+## The run's one weapon. Null when the config picks none (some tests).
+var _weapon: WeaponBehavior
+
 
 func _init(config: RunConfig) -> void:
 	assert(config.play_area.x > 0.0 and config.play_area.y > 0.0, "Run: play_area must be positive")
@@ -70,11 +73,16 @@ func _init(config: RunConfig) -> void:
 	_rng = RandomNumberGenerator.new()
 	_rng.seed = config.rng_seed
 
-	_crowd = AdmirerCrowd.new(content.shireen.body_radius, content.max_admirer_radius())
+	_crowd = AdmirerCrowd.new(content.shireen.body_radius, content.max_admirer_radius(), config.play_area)
 	for id: StringName in content.admirers:
 		_behaviors[id] = content.create_admirer_behavior(content.admirers[id])
 	if content.spawn_ramp != null:
 		_spawn_director = SpawnDirector.new(content.spawn_ramp, config.play_area, _rng)
+	if config.weapon_id != &"":
+		assert(content.weapons.has(config.weapon_id), "Run: the content has no weapon called \"%s\"" % config.weapon_id)
+		_weapon = content.create_weapon_behavior(content.weapons[config.weapon_id])
+		for track_id: StringName in config.starting_buff_ranks:
+			_weapon.set_buff_rank(track_id, config.starting_buff_ranks[track_id])
 
 
 ## Advances the run by one fixed step and returns what happened during it,
@@ -91,6 +99,11 @@ func step(delta: float, move_direction: Vector2) -> Array[RunEvent]:
 	_tick += 1
 	_move_shireen(delta, move_direction)
 	_crowd.step(delta, _shireen_position)
+	# The weapon goes after the crowd, so it aims at where admirers are now,
+	# and before the drain, so an admirer dazzled in this step drains
+	# nothing more.
+	if _weapon != null:
+		_weapon.step(delta, _shireen_position, _shireen_facing, _crowd)
 	_drain_patience(delta)
 	if _patience <= 0.0:
 		_phase = Phase.ENDED
@@ -117,14 +130,27 @@ func snapshot() -> RunSnapshot:
 	snap.phase = _phase
 	snap.outcome = _outcome
 	snap.last_touching_type = _last_touching_type
-	for admirer: Admirer in _crowd.admirers:
-		var copy := AdmirerSnapshot.new()
-		copy.id = admirer.id
-		copy.type_id = admirer.type.id
-		copy.position = admirer.position
-		copy.facing = admirer.facing
-		copy.touching = admirer.touching
-		snap.admirers.append(copy)
+	# The chasing admirers first, then the dazzled ones. One loop over both
+	# lists, with the copy written out here: a function call per admirer
+	# costs about as much as the copy itself, and with 300 admirers the
+	# view pays for it every frame.
+	for list: Array[Admirer] in [_crowd.admirers, _crowd.dazzled]:
+		for admirer: Admirer in list:
+			var copy := AdmirerSnapshot.new()
+			copy.id = admirer.id
+			copy.type_id = admirer.type.id
+			copy.position = admirer.position
+			copy.facing = admirer.facing
+			copy.touching = admirer.touching
+			copy.hp = admirer.hp
+			copy.state = admirer.state
+			copy.state_time = admirer.state_time
+			snap.admirers.append(copy)
+	snap.admirer_count = _crowd.size()
+	snap.admirers_dazzled = _crowd.dazzled_count
+	if _weapon != null:
+		snap.weapon = _weapon.snapshot()
+		_weapon.add_projectiles_to(snap.projectiles)
 	return snap
 
 
@@ -155,6 +181,8 @@ func _move_shireen(delta: float, move_direction: Vector2) -> void:
 
 
 ## Every admirer touching Shireen drains her Patience at his type's rate.
+## Only chasing admirers can touch her: a dazzled one left the chasing crowd
+## the moment he was dazzled, however close he still stands.
 ## They take their turns in spawn order, and the draining stops the moment
 ## nothing is left. So when it runs out, the last-touching type is the
 ## admirer who took the last of it.

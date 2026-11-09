@@ -57,12 +57,17 @@ const SHIREEN_FRAMES: Array[Dictionary] = [
 	{"bob": -1, "hip": 0, "step": 0, "glint": 1},
 ]
 
-## The Dowry Uncle's sheet: one row of 32×32 frames. A 2-frame walk.
+## The Dowry Uncle's sheet: one row of 32×32 frames. A 2-frame walk, then
+## the swoon he does when dazzled. Every admirer sheet has this layout.
 ## Keep art/README.md in sync if this changes.
 const UNCLE_FRAMES: Array[Dictionary] = [
-	{"bob": 0, "step": 1},  # Left foot forward.
-	{"bob": -1, "step": 2},  # Right foot forward, body up 1 px.
+	{"bob": 0, "step": 1, "swoon": false},  # Left foot forward.
+	{"bob": -1, "step": 2, "swoon": false},  # Right foot forward, body up 1 px.
+	{"bob": 0, "step": 0, "swoon": true},  # Dazzled: feet together, hand on heart.
 ]
+
+## Projectile sheets are one row of 16×16 frames, centred on (8, 8).
+const PROJECTILE_FRAME_SIZE: Vector2i = Vector2i(16, 16)
 
 var _colors: Dictionary[String, Color] = {}
 var _force: bool = false
@@ -80,6 +85,8 @@ func _init() -> void:
 	_save_text(_palette_gpl(), "res://art/palette.gpl")
 	_save_image(_draw_shireen_sheet(), "res://art/shireen/shireen.png")
 	_save_image(_draw_uncle_sheet(), "res://art/admirers/dowry_uncle.png")
+	_save_image(_draw_zill_sheet(), "res://art/projectiles/zill.png")
+	_save_image(_draw_heart_sheet(), "res://art/effects/heart.png")
 	_save_image(_draw_sand_tile(), "res://art/world/sand.png")
 	_save_image(_draw_palm_tree(), "res://art/props/palm_tree.png")
 	_save_image(_draw_lada_taxi(), "res://art/props/lada_taxi.png")
@@ -226,7 +233,7 @@ func _draw_uncle_sheet() -> Image:
 	var image := Image.create_empty(FRAME_SIZE.x * UNCLE_FRAMES.size(), FRAME_SIZE.y, false, Image.FORMAT_RGBA8)
 	for i: int in UNCLE_FRAMES.size():
 		var canvas := Canvas.new(image, Vector2i(FRAME_SIZE.x * i, 0), FRAME_SIZE)
-		_draw_uncle(canvas, UNCLE_FRAMES[i].bob, UNCLE_FRAMES[i].step)
+		_draw_uncle(canvas, UNCLE_FRAMES[i].bob, UNCLE_FRAMES[i].step, UNCLE_FRAMES[i].swoon)
 	return image
 
 
@@ -234,8 +241,10 @@ func _draw_uncle_sheet() -> Image:
 ## dignified older gentleman in a white thobe and a red-checked ghutra with a
 ## black agal, a neat grey beard, a gold watch, and the briefcase with the
 ## dowry offer. Feet at y = 29, like Shireen. [param bob] lifts his upper
-## body, [param step] picks which foot is forward (1 left, 2 right).
-func _draw_uncle(canvas: Canvas, bob: int, step: int) -> void:
+## body, [param step] picks which foot is forward (1 left, 2 right, 0 feet
+## together). With [param swoon] he is dazzled: a heart for an eye, a blush,
+## his hand on his heart and the briefcase dropped at his feet.
+func _draw_uncle(canvas: Canvas, bob: int, step: int, swoon: bool) -> void:
 	# Ghutra falling behind his shoulders.
 	canvas.rect(10, 9 + bob, 5, 8, c("car_white"))
 	canvas.vline(10, 10 + bob, 16 + bob, c("chrome"))
@@ -253,6 +262,9 @@ func _draw_uncle(canvas: Canvas, bob: int, step: int) -> void:
 	# Sandals peeking out under the hem, one foot ahead of the other.
 	var back_foot: int = 12 if step == 1 else 14
 	var front_foot: int = 19 if step == 1 else 17
+	if step == 0:
+		back_foot = 13
+		front_foot = 17
 	canvas.rect(back_foot, 29, 3, 1, c("trunk_dark"))
 	canvas.rect(front_foot, 29, 3, 1, c("trunk"))
 
@@ -260,8 +272,13 @@ func _draw_uncle(canvas: Canvas, bob: int, step: int) -> void:
 	canvas.ellipse(16, 9 + bob, 5.5, 5.5, c("car_white"))
 	canvas.ellipse(17.5, 10 + bob, 3, 3.5, c("skin"))
 	canvas.px(15, 10 + bob, c("skin_shadow"))
-	canvas.px(19, 9 + bob, c("ink"))  # Eye.
-	canvas.hline(18, 20, 8 + bob, c("car_gray"))  # Brow.
+	if swoon:
+		canvas.px(19, 9 + bob, c("rose"))  # A heart for an eye.
+		canvas.px(18, 11 + bob, c("rose"))  # Blush.
+		canvas.hline(18, 20, 7 + bob, c("car_gray"))  # Brow, raised.
+	else:
+		canvas.px(19, 9 + bob, c("ink"))  # Eye.
+		canvas.hline(18, 20, 8 + bob, c("car_gray"))  # Brow.
 	# Neat grey beard and moustache.
 	canvas.hline(17, 20, 12 + bob, c("car_gray"))
 	canvas.hline(17, 19, 13 + bob, c("car_gray"))
@@ -273,18 +290,89 @@ func _draw_uncle(canvas: Canvas, bob: int, step: int) -> void:
 	canvas.hline(12, 20, 4 + bob, c("hair"))
 	canvas.hline(12, 20, 5 + bob, c("hair_light"))
 
-	# Front arm down, holding the briefcase, with a gold watch.
-	canvas.rect(19, 16 + bob, 2, 6, c("car_white"))
-	canvas.vline(19, 16 + bob, 21 + bob, c("chrome"))
-	canvas.px(20, 21 + bob, c("gold"))
-	canvas.px(20, 22 + bob, c("skin"))
-	canvas.hline(20, 23, 22 + bob, c("trunk_dark"))  # Handle.
-	canvas.rect(19, 23 + bob, 7, 5, c("trunk"))
-	canvas.hline(19, 25, 27 + bob, c("trunk_dark"))
-	canvas.px(22, 24 + bob, c("gold_light"))  # Clasp.
+	if swoon:
+		# Front arm bent up, hand on his heart, the gold watch at his wrist.
+		canvas.rect(18, 16 + bob, 3, 2, c("car_white"))
+		canvas.hline(18, 20, 17 + bob, c("chrome"))
+		canvas.px(17, 16 + bob, c("gold"))
+		canvas.px(16, 16 + bob, c("skin"))
+		# The briefcase, dropped on the sand beside him.
+		canvas.rect(22, 25, 7, 4, c("trunk"))
+		canvas.hline(22, 28, 28, c("trunk_dark"))
+		canvas.hline(24, 26, 24, c("trunk_dark"))  # Handle.
+		canvas.px(25, 26, c("gold_light"))  # Clasp.
+	else:
+		# Front arm down, holding the briefcase, with a gold watch.
+		canvas.rect(19, 16 + bob, 2, 6, c("car_white"))
+		canvas.vline(19, 16 + bob, 21 + bob, c("chrome"))
+		canvas.px(20, 21 + bob, c("gold"))
+		canvas.px(20, 22 + bob, c("skin"))
+		canvas.hline(20, 23, 22 + bob, c("trunk_dark"))  # Handle.
+		canvas.rect(19, 23 + bob, 7, 5, c("trunk"))
+		canvas.hline(19, 25, 27 + bob, c("trunk_dark"))
+		canvas.px(22, 24 + bob, c("gold_light"))  # Clasp.
 
 	canvas.outline(c("ink"))
 	canvas.ellipse(16, 30, 7, 1.6, c("sand_dark"), 999, true)
+
+
+# --- Projectiles and effects ------------------------------------------------
+
+## A zill (finger cymbal) spinning in flight: two 16×16 frames, face-on and
+## edge-on. The disc is 4 px in radius, the zill's size in the weapon data.
+func _draw_zill_sheet() -> Image:
+	var image := Image.create_empty(PROJECTILE_FRAME_SIZE.x * 2, PROJECTILE_FRAME_SIZE.y, false, Image.FORMAT_RGBA8)
+
+	# Face-on: a brass disc with a raised boss in the middle and a glint.
+	var face := Canvas.new(image, Vector2i(0, 0), PROJECTILE_FRAME_SIZE)
+	face.ellipse(8, 8, 4.5, 4.5, c("gold"))
+	face.ellipse(8.5, 8.5, 3.5, 3.5, c("gold_dark"), 999, false)
+	face.ellipse(7.5, 7.5, 3.5, 3.5, c("gold"))
+	face.ellipse(8, 8, 1.5, 1.5, c("gold_dark"))
+	face.px(6, 5, c("gold_light"))
+	face.px(5, 6, c("gold_light"))
+	face.px(7, 7, c("gold_light"))
+	face.outline(c("ink"))
+
+	# Edge-on: the same disc seen from the side, with the boss on top.
+	var edge := Canvas.new(image, Vector2i(PROJECTILE_FRAME_SIZE.x, 0), PROJECTILE_FRAME_SIZE)
+	edge.ellipse(8, 8.5, 4.5, 1.5, c("gold"))
+	edge.hline(5, 10, 9, c("gold_dark"))
+	edge.hline(7, 8, 6, c("gold"))
+	edge.px(6, 7, c("gold_light"))
+	edge.outline(c("ink"))
+	return image
+
+
+## The heart that pops over a dazzled admirer: two 16×16 frames, a small
+## heart and then the full one, both centred on (8, 8).
+func _draw_heart_sheet() -> Image:
+	var image := Image.create_empty(PROJECTILE_FRAME_SIZE.x * 2, PROJECTILE_FRAME_SIZE.y, false, Image.FORMAT_RGBA8)
+
+	var small := Canvas.new(image, Vector2i(0, 0), PROJECTILE_FRAME_SIZE)
+	small.px(6, 6, c("rose"))
+	small.px(8, 6, c("rose"))
+	small.hline(5, 9, 7, c("rose"))
+	small.hline(6, 8, 8, c("rose"))
+	small.px(7, 9, c("rose"))
+	small.outline(c("ink"))
+
+	var big := Canvas.new(image, Vector2i(PROJECTILE_FRAME_SIZE.x, 0), PROJECTILE_FRAME_SIZE)
+	big.hline(4, 5, 4, c("rose"))
+	big.hline(9, 10, 4, c("rose"))
+	big.hline(3, 6, 5, c("rose"))
+	big.hline(8, 11, 5, c("rose"))
+	big.hline(3, 11, 6, c("rose"))
+	big.hline(3, 11, 7, c("rose"))
+	big.hline(4, 10, 8, c("rose"))
+	big.hline(5, 9, 9, c("rose"))
+	big.hline(6, 8, 10, c("rose"))
+	big.px(7, 11, c("rose"))
+	big.px(4, 5, c("car_white"))  # Shine.
+	big.px(5, 5, c("car_white"))
+	big.px(4, 6, c("car_white"))
+	big.outline(c("ink"))
+	return image
 
 
 # --- World ------------------------------------------------------------------

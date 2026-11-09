@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://src/view/run_view.gd" id="1_runview"]
 [ext_resource type="Script" path="res://src/view/endless_sand.gd" id="2_sand"]
@@ -7,6 +7,8 @@
 [ext_resource type="Script" path="res://src/view/shireen_sprite.gd" id="5_shireen"]
 [ext_resource type="Texture2D" path="res://art/shireen/shireen.png" id="6_shireentex"]
 [ext_resource type="Script" path="res://src/view/admirer_renderer.gd" id="7_admirers"]
+[ext_resource type="Script" path="res://src/view/projectile_renderer.gd" id="8_projectiles"]
+[ext_resource type="Script" path="res://src/view/heart_pop_renderer.gd" id="9_hearts"]
 [ext_resource type="Script" path="res://src/view/patience_bar.gd" id="8_patience"]
 [ext_resource type="PackedScene" path="res://src/view/defeat_screen.tscn" id="9_defeat"]
 
@@ -38,6 +40,14 @@ script = ExtResource("5_shireen")
 unique_name_in_owner = true
 y_sort_enabled = true
 script = ExtResource("7_admirers")
+
+[node name="Projectiles" type="Node2D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("8_projectiles")
+
+[node name="HeartPops" type="Node2D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("9_hearts")
 
 [node name="Camera" type="Camera2D" parent="."]
 unique_name_in_owner = true

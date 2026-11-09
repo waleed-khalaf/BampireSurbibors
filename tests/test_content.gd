@@ -70,8 +70,9 @@ static func ramping_spawns(admirer_id: StringName, per_second: float, extra_per_
 
 
 ## [param count] admirers of one type arriving as fast as the content allows
-## (100 per second, so the first on step 1) and no more after that. They chase
-## the real Shireen unless another one is given.
+## (100 per second, so the first on step 1). [param count] is the spawn cap:
+## no more arrive while that many are chasing. They chase the real Shireen
+## unless another one is given.
 static func crowd(admirer: AdmirerData, count: int, shireen: ShireenData = real().shireen) -> ContentRegistry:
 	return ContentRegistry.from_data(shireen, [admirer], steady_spawns(admirer.id, 100.0, count))
 
@@ -103,3 +104,35 @@ static func steady_harmless_uncles(per_second: float, max_admirers: int = 1000) 
 ## A chosen Shireen chased by harmless Uncles arriving on a chosen ramp.
 static func harmless_uncles_chasing(shireen: ShireenData, per_second: float, extra_per_second_each_minute: float, max_admirers: int) -> ContentRegistry:
 	return ContentRegistry.from_data(shireen, [harmless_uncle()], ramping_spawns(&"dowry_uncle", per_second, extra_per_second_each_minute, max_admirers))
+
+
+# --- Weapons ----------------------------------------------------------------
+
+## The real Zills data, loaded from content/weapons/.
+static func real_zills() -> WeaponData:
+	return real().weapons[&"zills"]
+
+
+## The real Zills with some base stats replaced, e.g. {&"pierce": 2.0}. The
+## weapon keeps the id "zills".
+static func zills_with(base_stats: Dictionary[StringName, float]) -> WeaponData:
+	var zills: WeaponData = real_zills().duplicate(true)
+	for stat: StringName in base_stats:
+		zills.base_stats[stat] = base_stats[stat]
+	return zills
+
+
+## A harmless Uncle (see [method harmless_uncle]) with so much HP that no test
+## dazzles him: for tests that need someone to keep throwing at.
+static func tough_uncle() -> AdmirerData:
+	var uncle: AdmirerData = harmless_uncle()
+	uncle.max_hp = 10000.0
+	return uncle
+
+
+## [param weapon] against [param count] admirers of one type, who all arrive
+## within the first second. [param count] is the spawn cap: another arrives
+## only to replace one who was dazzled. They chase the real Shireen unless
+## another one is given.
+static func weapon_against(weapon: WeaponData, admirer: AdmirerData, count: int, shireen: ShireenData = real().shireen) -> ContentRegistry:
+	return ContentRegistry.from_data(shireen, [admirer], steady_spawns(admirer.id, 100.0, count), [weapon])

@@ -4,7 +4,7 @@ extends RefCounted
 ## assert on it. Its fields can be written, but that only changes the copy,
 ## never the Run.
 ##
-## Later tickets add the weapon, pickups and so on.
+## Later tickets add cash, pickups and so on.
 
 ## Seconds of run time simulated so far (ticks × the fixed timestep).
 var time: float = 0.0
@@ -42,22 +42,28 @@ var outcome: Run.Outcome = Run.Outcome.NONE
 ## who took the last of her Patience: who she said yes to.
 var last_touching_type: StringName = &""
 
-## How many admirers Shireen has dazzled so far, shown on the end screen.
-## Nothing dazzles admirers yet, so it stays at 0 until ticket 06.
-var admirers_dazzled: int = 0
-
 ## How much cash Shireen has collected so far, shown on the end screen.
 ## Nothing drops cash yet, so it stays at 0 until ticket 07.
 var cash_collected: int = 0
 
-## Every admirer in the run, in spawn order (oldest first).
+## Every admirer on the field: first the ones chasing Shireen, in spawn
+## order (oldest first), then the dazzled ones swooning or walking off, in
+## the order they were dazzled. See [member AdmirerSnapshot.state].
 var admirers: Array[AdmirerSnapshot] = []
 
-## How many admirers are in the run. The debug capture's state dump reports
-## it (ticket 03).
-var admirer_count: int:
-	get:
-		return admirers.size()
+## How many admirers are still chasing Shireen. Dazzled ones on their way
+## out don't count. The debug capture's state dump reports it (ticket 03).
+var admirer_count: int = 0
+
+## How many admirers Shireen has dazzled this run. The end screens show it.
+var admirers_dazzled: int = 0
+
+## The run's weapon: its stats, buffs and abilities. Null when the run has
+## no weapon (some tests).
+var weapon: WeaponSnapshot
+
+## Everything the weapon has in flight, oldest first.
+var projectiles: Array[ProjectileSnapshot] = []
 
 
 ## Plain-data form, handy for comparing two snapshots and for debug dumps.
@@ -77,4 +83,6 @@ func to_dict() -> Dictionary[String, Variant]:
 		"cash_collected": cash_collected,
 		"admirer_count": admirer_count,
 		"admirers": admirers.map(func(admirer: AdmirerSnapshot) -> Dictionary: return admirer.to_dict()),
+		"weapon": weapon.to_dict() if weapon != null else {},
+		"projectiles": projectiles.map(func(projectile: ProjectileSnapshot) -> Dictionary: return projectile.to_dict()),
 	}

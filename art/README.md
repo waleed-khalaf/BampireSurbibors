@@ -38,18 +38,29 @@ One row of six 32×32 frames, left to right:
 
 Idle plays at 3 frames per second and walk at 8 (`src/view/shireen_sprite.gd`). Her feet touch the sand at **(16, 30)** in every frame. That point is where the game places her, so keep her feet there.
 
-### `admirers/dowry_uncle.png`: Dowry Uncle, 64×32
+### `admirers/dowry_uncle.png`: Dowry Uncle, 96×32
 
-One row of two 32×32 frames, a walk cycle that plays at 4 frames per second (`src/view/admirer_renderer.gd`):
+One row of three 32×32 frames (`src/view/admirer_renderer.gd`):
 
-| Frame | x | Notes |
-|---|---|---|
-| 0 | 0 | Left foot forward |
-| 1 | 32 | Right foot forward, body up 1 px |
+| Frame | x | Animation | Notes |
+|---|---|---|---|
+| 0 | 0 | Walk | Left foot forward |
+| 1 | 32 | Walk | Right foot forward, body up 1 px |
+| 2 | 64 | Swoon | Dazzled: a heart for an eye, hand on his heart, briefcase dropped |
 
-His feet touch the sand at **(16, 30)**, like Shireen's.
+The walk plays at 4 frames per second, and he uses it again when he walks off after the swoon. The swoon is a single frame, shown while the heart pops over him. His feet touch the sand at **(16, 30)**, like Shireen's.
 
-Every admirer sheet has this same layout: two 32×32 walk frames, feet at (16, 30). New sheets go in `admirers/`, named after the admirer's id: the `id` field inside his `.tres` file in `content/admirers/`, so `dowry_uncle` → `art/admirers/dowry_uncle.png`. The game finds them by that name, so nothing in the code needs to change. If a type's sheet is missing, the game warns in the Output panel with the path it expected and draws nothing for that type.
+Every admirer sheet has this same layout: two 32×32 walk frames and a swoon frame, feet at (16, 30). New sheets go in `admirers/`, named after the admirer's id: the `id` field inside his `.tres` file in `content/admirers/`, so `dowry_uncle` → `art/admirers/dowry_uncle.png`. The game finds them by that name, so nothing in the code needs to change. If a type's sheet is missing, the game warns in the Output panel with the path it expected and draws nothing for that type.
+
+### `projectiles/zill.png`: a zill in flight, 32×16
+
+One row of two 16×16 frames, the finger cymbal face-on and edge-on. They play in a loop at 12 frames per second, which makes it spin (`src/view/projectile_renderer.gd`). The cymbal is centred on **(8, 8)** and 4 px in radius, the zill's size in `content/weapons/zills.tres`; the game draws a bigger zill scaled up.
+
+Every projectile sheet has this layout: one row of 16×16 frames, centred on (8, 8), played in a loop. A sheet can have any number of frames. New sheets go in `projectiles/`, named after the projectile's kind (`zill` → `art/projectiles/zill.png`).
+
+### `effects/heart.png`: the heart pop, 32×16
+
+One row of two 16×16 frames, both centred on **(8, 8)**: a small heart, then the full one. When an admirer is dazzled the small heart shows for a blink, then the full heart floats up over his head while he swoons (`src/view/heart_pop_renderer.gd`).
 
 ### `world/sand.png`: sand tile, 64×64
 

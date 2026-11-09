@@ -15,12 +15,13 @@ extends GdUnitTestSuite
 ## strung-out crowd below took 1,005–1,230 µs. Ticket 05 then added the touch
 ## check and the Patience drain to every step: about 90 µs more with 300
 ## Uncles (2026-11-09, on a day the machine ran slower overall: ~1,260 µs with
-## the code before it, ~1,350 after). MEASURED_STEP_USEC is the typical value
-## from the first calibration plus that share. The budget allows about 3× the
-## first calibration for noisy runs and is 20% of a 60 Hz frame (16,667 µs),
-## leaving the rest for weapons, pickups and drawing. The tests print the time
-## they measured; if one fails, find out what got slower before raising the
-## budget.
+## the code before it, ~1,350 after). Ticket 06 (Zills) added each admirer's
+## HP and state to the snapshot's copy of him. MEASURED_STEP_USEC is the
+## typical value from the first calibration plus ticket 05's share. The
+## budget allows about 3× the first calibration for noisy runs and is 20% of
+## a 60 Hz frame (16,667 µs), leaving the rest for weapons, pickups and
+## drawing. The tests print the time they measured; if one fails, find out
+## what got slower before raising the budget.
 const MEASURED_STEP_USEC: float = 1200.0
 const STEP_BUDGET_USEC: float = 3300.0
 

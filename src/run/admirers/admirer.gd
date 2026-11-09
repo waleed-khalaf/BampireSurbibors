@@ -7,6 +7,10 @@ extends RefCounted
 ## Only the Run touches these. The view and tests see copies
 ## (AdmirerSnapshot) through the Run's snapshot.
 
+## What he's doing. He chases Shireen until he's dazzled; then he swoons on
+## the spot for a moment and walks off, and is removed once off screen.
+enum State { CHASING, SWOONING, LEAVING }
+
 ## Unique within one run, counting up from 1 in spawn order. The view uses it
 ## to follow the same admirer from one snapshot to the next.
 var id: int = 0
@@ -28,12 +32,18 @@ var position: Vector2 = Vector2.ZERO
 var facing: Vector2 = Vector2.RIGHT
 
 ## What is left of his resistance to Shireen's dance. Starts at the type's
-## max_hp; weapons lower it from ticket 06.
+## max_hp; the weapon's hits lower it, and at 0 he is dazzled.
 var hp: float = 0.0
 
 ## Whether his body is against Shireen's after the latest step. The crowd
 ## works it out (AdmirerCrowd.step) and the Run drains her Patience by it.
 var touching: bool = false
+
+var state: State = State.CHASING
+
+## Seconds since he entered his current state. Only counted once he's
+## dazzled: it times the swoon, and the view's heart pop.
+var state_time: float = 0.0
 
 
 func _init(p_id: int, p_type: AdmirerData, p_behavior: AdmirerBehavior, p_position: Vector2) -> void:

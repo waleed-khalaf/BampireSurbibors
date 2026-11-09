@@ -11,7 +11,7 @@ extends Resource
 ## Lower case with underscores, like "dowry_uncle".
 @export var id: StringName = &""
 
-## How much dazzle power it takes before he swoons (ticket 06).
+## How much dazzle power (weapon damage) it takes before he is dazzled.
 @export var max_hp: float = 30.0
 
 ## How far he walks in one second, in pixels at the 640×360 base resolution.
@@ -26,6 +26,12 @@ extends Resource
 ## Radius of his body circle in pixels. Admirers keep their circles apart, so
 ## this sets how tightly a crowd packs. About half his sprite's width.
 @export var body_radius: float = 7.0
+
+## How long he swoons on the spot once dazzled, before he walks off.
+@export var swoon_seconds: float = 0.6
+
+## How fast he walks off after the swoon, in pixels per second.
+@export var leave_speed: float = 60.0
 
 ## Which behavior class drives him, by ID. The content registry maps IDs to
 ## classes (ContentRegistry.ADMIRER_BEHAVIORS), and rejects unknown IDs.
