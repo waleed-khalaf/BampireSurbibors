@@ -11,11 +11,11 @@ extends Node
 ## through state providers, so a new system shows up in state.txt without this
 ## file changing:
 ##
-##     DebugCapture.register_provider("Patience", func() -> Dictionary:
-##         return {"patience": _patience, "max": _max_patience})
+##     DebugCapture.register_provider("Music", func() -> Dictionary:
+##         return {"track": _track_name, "beat": _beat})
 ##
-## Later tickets call DebugCapture.capture("run ended"), capture("victory")
-## and so on for automatic snapshots.
+## RunView calls DebugCapture.capture("run ended") when a run ends, for an
+## automatic snapshot. Later tickets add capture("victory") and so on.
 
 const ROLLING_INTERVAL: float = 5.0
 const ROLLING_KEEP: int = 60

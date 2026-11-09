@@ -36,6 +36,19 @@ func test_an_absurdly_fast_shireen_is_rejected() -> void:
 	])
 
 
+func test_the_real_content_gives_shireen_100_patience() -> void:
+	# The design doc's starting value (design §4).
+	assert_float(ContentRegistry.load_default().shireen.max_patience).is_equal(100.0)
+
+
+func test_a_shireen_with_no_patience_is_rejected() -> void:
+	var content := ContentRegistry.from_data(TestContent.shireen_with_patience(0.0))
+
+	assert_array(content.errors).contains_exactly([
+		"Shireen: max_patience must be between 1 and 10000, but it is 0.",
+	])
+
+
 func test_a_missing_data_file_is_rejected_with_its_path() -> void:
 	var content := ContentRegistry.load_from(MISSING_PATH)
 

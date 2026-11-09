@@ -130,7 +130,7 @@ func test_a_zill_flies_at_the_nearest_admirer() -> void:
 
 func test_three_zills_dazzle_a_dowry_uncle() -> void:
 	# The real numbers: an Uncle has 30 HP and a zill does 10 damage.
-	var content := TestContent.weapon_against(TestContent.real_zills(), TestContent.real_uncle(), 1)
+	var content := TestContent.weapon_against(TestContent.real_zills(), TestContent.harmless_uncle(), 1)
 	var run := _zills_run(content, 5)
 
 	# The throws come at 1.2, 2.4 and 3.6 s. After two hits he is still
@@ -154,7 +154,7 @@ func test_three_zills_dazzle_a_dowry_uncle() -> void:
 ## after the zill has flown its whole range.
 func _uncles_hit_by_one_zill(pierce: float) -> int:
 	var zills := TestContent.zills_with({&"cooldown": 20.0, &"pierce": pierce})
-	var run := _zills_run(TestContent.weapon_against(zills, TestContent.real_uncle(), 60), 31)
+	var run := _zills_run(TestContent.weapon_against(zills, TestContent.harmless_uncle(), 60), 31)
 
 	_stand(run, 22 * Run.STEPS_PER_SECOND)
 
@@ -196,7 +196,7 @@ func test_two_zills_per_throw_fly_at_the_two_nearest_admirers() -> void:
 func test_spare_zills_all_fly_at_a_lone_admirer() -> void:
 	# Three zills of 10 damage at once are enough for an Uncle's 30 HP.
 	var zills := TestContent.zills_with({&"count": 3.0})
-	var run := _zills_run(TestContent.weapon_against(zills, TestContent.real_uncle(), 1), 5)
+	var run := _zills_run(TestContent.weapon_against(zills, TestContent.harmless_uncle(), 1), 5)
 
 	# One throw at 1.2 s; the next would come at 2.4 s.
 	_stand(run, 2 * Run.STEPS_PER_SECOND)
@@ -209,20 +209,37 @@ func test_spare_zills_all_fly_at_a_lone_admirer() -> void:
 
 ## A run where one zill dazzles an Uncle, and the first throw only comes at
 ## 10 s, when [param uncles] Uncles have long been pressed against Shireen.
-func _run_with_a_late_dazzling_throw(uncles: int) -> Run:
+## They are harmless unless [param uncle] and a [param shireen] with the
+## Patience to last that long are given.
+func _run_with_a_late_dazzling_throw(uncles: int, uncle: AdmirerData = TestContent.harmless_uncle(), shireen: ShireenData = TestContent.real().shireen) -> Run:
 	var zills := TestContent.zills_with({&"cooldown": 10.0, &"damage": 30.0})
-	return _zills_run(TestContent.weapon_against(zills, TestContent.real_uncle(), uncles), 5)
+	return _zills_run(TestContent.weapon_against(zills, uncle, uncles, shireen), 5)
+
+
+## The first dazzled admirer in [param snapshot], or null if there is none.
+func _dazzled_admirer(snapshot: RunSnapshot) -> AdmirerSnapshot:
+	for admirer: AdmirerSnapshot in snapshot.admirers:
+		if admirer.state != Admirer.State.CHASING:
+			return admirer
+	return null
 
 
 ## Steps [param run] until someone has been dazzled, and returns him.
 func _stand_until_someone_is_dazzled(run: Run) -> AdmirerSnapshot:
 	for i: int in 15 * Run.STEPS_PER_SECOND:
 		run.step(Run.TIMESTEP, Vector2.ZERO)
-		for admirer: AdmirerSnapshot in run.snapshot().admirers:
-			if admirer.state != Admirer.State.CHASING:
-				return admirer
+		var dazzled: AdmirerSnapshot = _dazzled_admirer(run.snapshot())
+		if dazzled != null:
+			return dazzled
 	fail("nobody was dazzled within 15 s")
 	return null
+
+
+## Takes one step standing still and returns the Patience it cost Shireen.
+func _patience_lost_in_one_step(run: Run) -> float:
+	var before: float = run.snapshot().patience
+	run.step(Run.TIMESTEP, Vector2.ZERO)
+	return before - run.snapshot().patience
 
 
 func test_a_dazzled_uncle_swoons_then_walks_off_screen_and_is_removed() -> void:
@@ -259,27 +276,28 @@ func test_a_dazzled_uncle_swoons_then_walks_off_screen_and_is_removed() -> void:
 
 
 func test_a_dazzled_uncle_stops_draining_patience_at_once() -> void:
-	var run := _run_with_a_late_dazzling_throw(3)
+	# Three real Uncles, and a Shireen with the Patience to stand among them
+	# until the first throw.
+	var run := _run_with_a_late_dazzling_throw(3, TestContent.real_uncle(), TestContent.shireen_with_patience(1000.0))
+	var per_step: float = 1.0 / Run.STEPS_PER_SECOND
 
-	# All three real Uncles touch her by now: 10 Patience per second each.
+	# All three touch her by now: 10 Patience per second each.
 	_stand(run, 9 * Run.STEPS_PER_SECOND)
-	assert_float(run.snapshot().drain_per_second).is_equal(30.0)
+	assert_float(_patience_lost_in_one_step(run)).is_equal_approx(30.0 * per_step, 0.0001)
 
-	var dazzled: AdmirerSnapshot = _stand_until_someone_is_dazzled(run)
+	var lost_in_the_dazzling_step: float = 0.0
+	for i: int in 2 * Run.STEPS_PER_SECOND:
+		lost_in_the_dazzling_step = _patience_lost_in_one_step(run)
+		if run.snapshot().admirers_dazzled > 0:
+			break
+	var dazzled: AdmirerSnapshot = _dazzled_admirer(run.snapshot())
 
 	# In the very step he is dazzled, he stops draining, though he still
 	# stands right against her (her 6 px body plus his 7 px).
+	assert_object(dazzled).is_not_null()
 	assert_float(dazzled.position.length()).is_less(13.5)
 	assert_bool(dazzled.touching).is_false()
-	assert_float(run.snapshot().drain_per_second).is_equal(20.0)
-
-
-func test_an_uncle_who_is_not_touching_shireen_drains_nothing() -> void:
-	var run := Run.new(RunConfig.new(TestContent.uncle_crowd(1), 5))
-
-	_stand(run, Run.STEPS_PER_SECOND)
-
-	assert_float(run.snapshot().drain_per_second).is_equal(0.0)
+	assert_float(lost_in_the_dazzling_step).is_equal_approx(20.0 * per_step, 0.0001)
 
 
 func test_shireen_walks_straight_through_a_swooning_uncle() -> void:
@@ -363,7 +381,7 @@ func test_a_track_only_gives_what_its_ranks_so_far_grant() -> void:
 
 
 func test_a_maxed_damage_track_dazzles_an_uncle_in_two_hits() -> void:
-	var content := TestContent.weapon_against(TestContent.real_zills(), TestContent.real_uncle(), 1)
+	var content := TestContent.weapon_against(TestContent.real_zills(), TestContent.harmless_uncle(), 1)
 	var run := _zills_run(content, 5, SMALL_SCREEN, {&"damage": 5})
 
 	# 20 damage a zill against 30 HP.

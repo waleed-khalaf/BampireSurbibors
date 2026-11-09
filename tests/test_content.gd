@@ -14,11 +14,36 @@ static func real_uncle() -> AdmirerData:
 	return real().admirers[&"dowry_uncle"]
 
 
+## The real Dowry Uncle, except that touching him costs no Patience. For tests
+## about how a crowd arrives and moves: they run for a long time with Uncles
+## pressed against Shireen, and with real ones the run would end on "You said
+## yes." partway through.
+static func harmless_uncle() -> AdmirerData:
+	return made_up_admirer(&"dowry_uncle", 0.0)
+
+
+## A made-up admirer type: the real Dowry Uncle's numbers under another id,
+## with a chosen drain. For tests that tell admirer types apart.
+static func made_up_admirer(id: StringName, drain_per_second: float) -> AdmirerData:
+	var type: AdmirerData = real_uncle().duplicate()
+	type.id = id
+	type.drain_per_second = drain_per_second
+	return type
+
+
 ## Shireen's data with a chosen speed. Round numbers make expected distances
 ## easy to read in a test.
 static func shireen_with_speed(move_speed: float) -> ShireenData:
 	var shireen := ShireenData.new()
 	shireen.move_speed = move_speed
+	return shireen
+
+
+## The real Shireen with a chosen amount of Patience. A big number keeps her in
+## the run while a test watches the drain for a long time.
+static func shireen_with_patience(max_patience: float) -> ShireenData:
+	var shireen: ShireenData = real().shireen.duplicate()
+	shireen.max_patience = max_patience
 	return shireen
 
 
@@ -44,23 +69,41 @@ static func ramping_spawns(admirer_id: StringName, per_second: float, extra_per_
 	return spawns
 
 
-## The real Shireen and Dowry Uncle, with [param count] Uncles arriving as
-## fast as the content allows (100 per second, so the first on step 1).
-## [param count] is the spawn cap: no more arrive while that many are chasing.
+## [param count] admirers of one type arriving as fast as the content allows
+## (100 per second, so the first on step 1). [param count] is the spawn cap:
+## no more arrive while that many are chasing. They chase the real Shireen
+## unless another one is given.
+static func crowd(admirer: AdmirerData, count: int, shireen: ShireenData = real().shireen) -> ContentRegistry:
+	return ContentRegistry.from_data(shireen, [admirer], steady_spawns(admirer.id, 100.0, count))
+
+
+## The real Shireen and Dowry Uncle, with [param count] Uncles arriving at
+## once (see [method crowd]).
 static func uncle_crowd(count: int) -> ContentRegistry:
+	return crowd(real_uncle(), count)
+
+
+## The real Shireen with [param count] harmless Uncles arriving at once (see
+## [method crowd] and [method harmless_uncle]).
+static func harmless_uncle_crowd(count: int) -> ContentRegistry:
+	return crowd(harmless_uncle(), count)
+
+
+## The real game content, except that its Uncles are harmless: the real
+## Shireen and the real spawn ramp.
+static func real_with_harmless_uncles() -> ContentRegistry:
 	var content := real()
-	return ContentRegistry.from_data(content.shireen, [real_uncle()], steady_spawns(&"dowry_uncle", 100.0, count))
+	return ContentRegistry.from_data(content.shireen, [harmless_uncle()], content.spawn_ramp)
 
 
-## The real Shireen and Dowry Uncle, with Uncles arriving at a steady rate.
-static func steady_uncles(per_second: float, max_admirers: int = 1000) -> ContentRegistry:
-	var content := real()
-	return ContentRegistry.from_data(content.shireen, [real_uncle()], steady_spawns(&"dowry_uncle", per_second, max_admirers))
+## The real Shireen with harmless Uncles arriving at a steady rate.
+static func steady_harmless_uncles(per_second: float, max_admirers: int = 1000) -> ContentRegistry:
+	return ContentRegistry.from_data(real().shireen, [harmless_uncle()], steady_spawns(&"dowry_uncle", per_second, max_admirers))
 
 
-## A chosen Shireen chased by real Dowry Uncles arriving on a chosen ramp.
-static func uncles_chasing(shireen: ShireenData, per_second: float, extra_per_second_each_minute: float, max_admirers: int) -> ContentRegistry:
-	return ContentRegistry.from_data(shireen, [real_uncle()], ramping_spawns(&"dowry_uncle", per_second, extra_per_second_each_minute, max_admirers))
+## A chosen Shireen chased by harmless Uncles arriving on a chosen ramp.
+static func harmless_uncles_chasing(shireen: ShireenData, per_second: float, extra_per_second_each_minute: float, max_admirers: int) -> ContentRegistry:
+	return ContentRegistry.from_data(shireen, [harmless_uncle()], ramping_spawns(&"dowry_uncle", per_second, extra_per_second_each_minute, max_admirers))
 
 
 # --- Weapons ----------------------------------------------------------------
@@ -79,16 +122,17 @@ static func zills_with(base_stats: Dictionary[StringName, float]) -> WeaponData:
 	return zills
 
 
-## The real Dowry Uncle, but with so much HP that no test dazzles him: for
-## tests that need someone to keep throwing at.
+## A harmless Uncle (see [method harmless_uncle]) with so much HP that no test
+## dazzles him: for tests that need someone to keep throwing at.
 static func tough_uncle() -> AdmirerData:
-	var uncle: AdmirerData = real_uncle().duplicate()
+	var uncle: AdmirerData = harmless_uncle()
 	uncle.max_hp = 10000.0
 	return uncle
 
 
-## The real Shireen with [param weapon] against [param count] admirers of
-## one type, who all arrive within the first second. [param count] is the
-## spawn cap: another arrives only to replace one who was dazzled.
-static func weapon_against(weapon: WeaponData, admirer: AdmirerData, count: int) -> ContentRegistry:
-	return ContentRegistry.from_data(real().shireen, [admirer], steady_spawns(admirer.id, 100.0, count), [weapon])
+## [param weapon] against [param count] admirers of one type, who all arrive
+## within the first second. [param count] is the spawn cap: another arrives
+## only to replace one who was dazzled. They chase the real Shireen unless
+## another one is given.
+static func weapon_against(weapon: WeaponData, admirer: AdmirerData, count: int, shireen: ShireenData = real().shireen) -> ContentRegistry:
+	return ContentRegistry.from_data(shireen, [admirer], steady_spawns(admirer.id, 100.0, count), [weapon])

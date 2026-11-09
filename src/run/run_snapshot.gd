@@ -4,7 +4,7 @@ extends RefCounted
 ## assert on it. Its fields can be written, but that only changes the copy,
 ## never the Run.
 ##
-## Later tickets add Patience, cash, pickups and so on.
+## Later tickets add cash, pickups and so on.
 
 ## Seconds of run time simulated so far (ticks × the fixed timestep).
 var time: float = 0.0
@@ -24,6 +24,28 @@ var shireen_facing: Vector2 = Vector2.RIGHT
 ## animation from it.
 var shireen_moving: bool = false
 
+## Shireen's Patience right now, from [member max_patience] down to 0.
+var patience: float = 0.0
+
+## The Patience she started the run with, from her data. The HUD bar is full
+## at this value.
+var max_patience: float = 0.0
+
+## Whether the run is still being played or is over.
+var phase: Run.Phase = Run.Phase.PLAYING
+
+## How the run ended, or NONE while it is still being played.
+var outcome: Run.Outcome = Run.Outcome.NONE
+
+## The type id of the admirer who touched her most recently, e.g.
+## &"dowry_uncle", or empty if nobody has yet. After a defeat it's the one
+## who took the last of her Patience: who she said yes to.
+var last_touching_type: StringName = &""
+
+## How much cash Shireen has collected so far, shown on the end screen.
+## Nothing drops cash yet, so it stays at 0 until ticket 07.
+var cash_collected: int = 0
+
 ## Every admirer on the field: first the ones chasing Shireen, in spawn
 ## order (oldest first), then the dazzled ones swooning or walking off, in
 ## the order they were dazzled. See [member AdmirerSnapshot.state].
@@ -35,12 +57,6 @@ var admirer_count: int = 0
 
 ## How many admirers Shireen has dazzled this run. The end screens show it.
 var admirers_dazzled: int = 0
-
-
-## Patience Shireen is losing per second right now: the summed drain of
-## every admirer touching her. Dazzled admirers drain nothing. (Patience
-## itself arrives with ticket 05.)
-var drain_per_second: float = 0.0
 
 ## The run's weapon: its stats, buffs and abilities. Null when the run has
 ## no weapon (some tests).
@@ -58,9 +74,14 @@ func to_dict() -> Dictionary[String, Variant]:
 		"shireen_position": shireen_position,
 		"shireen_facing": shireen_facing,
 		"shireen_moving": shireen_moving,
-		"admirer_count": admirer_count,
+		"patience": patience,
+		"max_patience": max_patience,
+		"phase": Run.phase_name(phase),
+		"outcome": Run.outcome_name(outcome),
+		"last_touching_type": last_touching_type,
 		"admirers_dazzled": admirers_dazzled,
-		"drain_per_second": drain_per_second,
+		"cash_collected": cash_collected,
+		"admirer_count": admirer_count,
 		"admirers": admirers.map(func(admirer: AdmirerSnapshot) -> Dictionary: return admirer.to_dict()),
 		"weapon": weapon.to_dict() if weapon != null else {},
 		"projectiles": projectiles.map(func(projectile: ProjectileSnapshot) -> Dictionary: return projectile.to_dict()),
