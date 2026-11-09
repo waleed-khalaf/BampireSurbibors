@@ -17,8 +17,10 @@ extends Resource
 ## 2 per second at 1:00, 3 at 2:00 and so on.
 @export var extra_spawns_per_second_each_minute: float = 1.0
 
-## The director stops spawning while this many admirers are in the run, so the
-## crowd never grows past what the game can draw smoothly (design §13).
+## The director stops spawning while this many admirers are chasing Shireen,
+## so the crowd never grows past what the game can draw smoothly (design
+## §13). Dazzled admirers on their way out don't count: each one makes room
+## for a new arrival at once.
 @export var max_admirers: int = 300
 
 ## How far outside the screen edge admirers appear, in pixels. At least a

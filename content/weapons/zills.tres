@@ -1,0 +1,87 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://src/content/ability_data.gd" id="1_v7rog"]
+[ext_resource type="Script" path="res://src/content/buff_track_data.gd" id="2_ovlis"]
+[ext_resource type="Script" path="res://src/content/stat_modifier_data.gd" id="3_cx828"]
+[ext_resource type="Script" path="res://src/content/weapon_data.gd" id="4_dqn2c"]
+
+[sub_resource type="Resource" id="Resource_dkc26"]
+script = ExtResource("3_cx828")
+stat = &"damage"
+kind = 1
+value = 0.2
+ranks = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_53yaw"]
+script = ExtResource("2_ovlis")
+id = &"damage"
+display_name = "Damage"
+modifiers = Array[ExtResource("3_cx828")]([SubResource("Resource_dkc26")])
+
+[sub_resource type="Resource" id="Resource_i3n30"]
+script = ExtResource("3_cx828")
+stat = &"rate"
+kind = 1
+value = 0.12
+ranks = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_hni4i"]
+script = ExtResource("2_ovlis")
+id = &"throw_rate"
+display_name = "Throw rate"
+modifiers = Array[ExtResource("3_cx828")]([SubResource("Resource_i3n30")])
+
+[sub_resource type="Resource" id="Resource_mw1iq"]
+script = ExtResource("3_cx828")
+stat = &"count"
+value = 1.0
+ranks = PackedInt32Array(1, 3, 5)
+
+[sub_resource type="Resource" id="Resource_fw86r"]
+script = ExtResource("3_cx828")
+stat = &"area"
+kind = 1
+value = 0.15
+ranks = PackedInt32Array(2, 4)
+
+[sub_resource type="Resource" id="Resource_1onvf"]
+script = ExtResource("2_ovlis")
+id = &"count"
+display_name = "Count"
+modifiers = Array[ExtResource("3_cx828")]([SubResource("Resource_mw1iq"), SubResource("Resource_fw86r")])
+
+[sub_resource type="Resource" id="Resource_01mru"]
+script = ExtResource("3_cx828")
+stat = &"speed"
+kind = 1
+value = 0.1
+ranks = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_r2tx7"]
+script = ExtResource("3_cx828")
+stat = &"pierce"
+value = 1.0
+ranks = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_aurta"]
+script = ExtResource("2_ovlis")
+id = &"speed_and_pierce"
+display_name = "Speed and pierce"
+modifiers = Array[ExtResource("3_cx828")]([SubResource("Resource_01mru"), SubResource("Resource_r2tx7")])
+
+[resource]
+script = ExtResource("4_dqn2c")
+id = &"zills"
+display_name = "Zills"
+behavior_id = &"zills"
+base_stats = Dictionary[StringName, float]({
+&"area": 4.0,
+&"cooldown": 1.2,
+&"count": 1.0,
+&"damage": 10.0,
+&"pierce": 0.0,
+&"range": 380.0,
+&"rate": 1.0,
+&"speed": 220.0
+})
+buff_tracks = Array[ExtResource("2_ovlis")]([SubResource("Resource_53yaw"), SubResource("Resource_hni4i"), SubResource("Resource_1onvf"), SubResource("Resource_aurta")])

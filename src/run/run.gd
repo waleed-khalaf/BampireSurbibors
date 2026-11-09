@@ -32,6 +32,9 @@ var _spawn_director: SpawnDirector
 var _behaviors: Dictionary[StringName, AdmirerBehavior] = {}
 var _last_admirer_id: int = 0
 
+## The run's one weapon. Null when the config picks none (some tests).
+var _weapon: WeaponBehavior
+
 
 func _init(config: RunConfig) -> void:
 	assert(config.play_area.x > 0.0 and config.play_area.y > 0.0, "Run: play_area must be positive")
@@ -44,11 +47,16 @@ func _init(config: RunConfig) -> void:
 	_rng = RandomNumberGenerator.new()
 	_rng.seed = config.rng_seed
 
-	_crowd = AdmirerCrowd.new(content.shireen.body_radius, content.max_admirer_radius())
+	_crowd = AdmirerCrowd.new(content.shireen.body_radius, content.max_admirer_radius(), config.play_area)
 	for id: StringName in content.admirers:
 		_behaviors[id] = content.create_admirer_behavior(content.admirers[id])
 	if content.spawn_ramp != null:
 		_spawn_director = SpawnDirector.new(content.spawn_ramp, config.play_area, _rng)
+	if config.weapon_id != &"":
+		assert(content.weapons.has(config.weapon_id), "Run: the content has no weapon called \"%s\"" % config.weapon_id)
+		_weapon = content.create_weapon_behavior(content.weapons[config.weapon_id])
+		for track_id: StringName in config.starting_buff_ranks:
+			_weapon.set_buff_rank(track_id, config.starting_buff_ranks[track_id])
 
 
 ## Advances the run by one fixed step.
@@ -59,6 +67,9 @@ func step(delta: float, move_direction: Vector2) -> void:
 	_tick += 1
 	_move_shireen(delta, move_direction)
 	_crowd.step(delta, _shireen_position)
+	# The weapon goes after the crowd, so it aims at where admirers are now.
+	if _weapon != null:
+		_weapon.step(delta, _shireen_position, _shireen_facing, _crowd)
 	# Spawn last, so a new admirer shows up exactly where the director put
 	# him, just off-screen, before he takes his first step.
 	_spawn_admirers(delta)
@@ -73,14 +84,40 @@ func snapshot() -> RunSnapshot:
 	snap.shireen_position = _shireen_position
 	snap.shireen_facing = _shireen_facing
 	snap.shireen_moving = _shireen_moving
-	for admirer: Admirer in _crowd.admirers:
-		var copy := AdmirerSnapshot.new()
-		copy.id = admirer.id
-		copy.type_id = admirer.type.id
-		copy.position = admirer.position
-		copy.facing = admirer.facing
-		snap.admirers.append(copy)
+	# The chasing admirers first, then the dazzled ones. One loop over both
+	# lists, with the copy written out here: a function call per admirer
+	# costs about as much as the copy itself, and with 300 admirers the
+	# view pays for it every frame.
+	for list: Array[Admirer] in [_crowd.admirers, _crowd.dazzled]:
+		for admirer: Admirer in list:
+			var copy := AdmirerSnapshot.new()
+			copy.id = admirer.id
+			copy.type_id = admirer.type.id
+			copy.position = admirer.position
+			copy.facing = admirer.facing
+			copy.touching = admirer.touching
+			copy.hp = admirer.hp
+			copy.state = admirer.state
+			copy.state_time = admirer.state_time
+			snap.admirers.append(copy)
+	snap.admirer_count = _crowd.size()
+	snap.admirers_dazzled = _crowd.dazzled_count
+	snap.drain_per_second = _drain_per_second()
+	if _weapon != null:
+		snap.weapon = _weapon.snapshot()
+		_weapon.add_projectiles_to(snap.projectiles)
 	return snap
+
+
+## The Patience Shireen loses per second right now: the drain of every
+## admirer touching her. A dazzled admirer left the chasing crowd the moment
+## he was dazzled, so he isn't counted, however close he still stands.
+func _drain_per_second() -> float:
+	var total: float = 0.0
+	for admirer: Admirer in _crowd.admirers:
+		if admirer.touching:
+			total += admirer.type.drain_per_second
+	return total
 
 
 func _time() -> float:

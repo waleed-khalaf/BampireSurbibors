@@ -19,10 +19,13 @@ extends Node2D
 
 ## Where the sheets live, one per admirer type, named after the type's id.
 const SHEETS_DIR: String = "res://art/admirers"
-## Every sheet has the same layout: one row of 32×32 frames, a 2-frame walk
-## cycle, facing right (see art/README.md).
+## Every sheet has the same layout: one row of 32×32 frames facing right, a
+## 2-frame walk cycle and then the swoon of a dazzled admirer (see
+## art/README.md).
 const WALK_FRAMES: int = 2
 const WALK_FPS: float = 4.0
+const SWOON_FRAME: int = 2
+const SHEET_FRAMES: int = 3
 ## Where the feet are in each frame, like Shireen's. The sprite's position is
 ## the admirer's position, so this is the offset that puts the feet there.
 const FEET: Vector2 = Vector2(16, 30)
@@ -79,9 +82,13 @@ func show_admirers(snapshot: RunSnapshot, previous: RunSnapshot, blend: float, d
 		# A new admirer has no previous position: show him where he is.
 		var from: Vector2 = previous_positions.get(admirer.id, admirer.position)
 		sprite.position = from.lerp(admirer.position, blend).round()
-		# Each admirer starts his walk cycle at a different moment (picked
-		# from his id), so a crowd doesn't step in lockstep.
-		sprite.frame = floori(_anim_time * WALK_FPS + admirer.id * 0.37) % WALK_FRAMES
+		if admirer.state == Admirer.State.SWOONING:
+			sprite.frame = SWOON_FRAME
+		else:
+			# Each admirer starts his walk cycle at a different moment
+			# (picked from his id), so a crowd doesn't step in lockstep. A
+			# dazzled admirer walking off uses the same walk.
+			sprite.frame = floori(_anim_time * WALK_FPS + admirer.id * 0.37) % WALK_FRAMES
 		if sprite.admirer_id != admirer.id:
 			# The sprite changed hands: start from this admirer's own facing,
 			# however slight its left/right part, so he never shows the flip
@@ -102,7 +109,7 @@ func _new_sprite() -> PooledSprite:
 	var sprite := PooledSprite.new()
 	sprite.centered = false
 	sprite.offset = -FEET
-	sprite.hframes = WALK_FRAMES
+	sprite.hframes = SHEET_FRAMES
 	add_child(sprite)
 	return sprite
 

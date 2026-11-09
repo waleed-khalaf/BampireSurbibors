@@ -20,11 +20,11 @@ Press **F5** in the editor (or the ▶ button at the top right).
 | Accept | Enter | Ticket 05 (restart after "You said yes.") |
 | Pause | Esc | Ticket 09 (title, weapon select and pause) |
 
-The keys are all mapped already. For now Shireen can walk around the endless sand while the run timer ticks up.
+The keys are all mapped already. For now Shireen walks around the endless sand while Dowry Uncles close in on her. Her **Zills** fly by themselves at the nearest Uncle every 1.2 seconds. Three hits **dazzle** him: he swoons with a heart popping over his head, then wanders off screen.
 
 ## Report a bug
 
-While you play from the editor, the game saves a screenshot every 5 seconds to `debug_captures/rolling/` and keeps the newest 60 (about 5 minutes). When something looks wrong, press **F12**: "Debug capture saved" appears at the top left, and a folder like `debug_captures/2026-11-06_14-03-22_f12/` holds `screenshot.png` and `state.txt` (run time, Shireen's position, fps, the seed and the last log lines and errors). Then tell Claude what happened; it reads the captures before changing code. The folder is gitignored and Godot's FileSystem panel doesn't show it, so open it in Explorer. An exported debug build saves its captures to `%APPDATA%\Godot\app_userdata\Habibi, Get Closer\debug_captures\` instead (an exported game can't write into its own files), and exported release builds make no captures.
+While you play from the editor, the game saves a screenshot every 5 seconds to `debug_captures/rolling/` and keeps the newest 60 (about 5 minutes). When something looks wrong, press **F12**: "Debug capture saved" appears at the top left, and a folder like `debug_captures/2026-11-06_14-03-22_f12/` holds `screenshot.png` and `state.txt` (run time, Shireen's position, her weapon with its stats and buffs, the admirers, fps, the seed and the last log lines and errors). Then tell Claude what happened; it reads the captures before changing code. The folder is gitignored and Godot's FileSystem panel doesn't show it, so open it in Explorer. An exported debug build saves its captures to `%APPDATA%\Godot\app_userdata\Habibi, Get Closer\debug_captures\` instead (an exported game can't write into its own files), and exported release builds make no captures.
 
 ## Run the tests
 
@@ -46,11 +46,11 @@ The sprites in `art/` are code-drawn drafts for you to refine in LibreSprite. [a
 
 ## Tune the game
 
-Tunable numbers live in Godot Resource files under `content/`. Double-click one in Godot's FileSystem panel and edit it in the Inspector. For example, `content/shireen.tres` holds Shireen's move speed. The game checks the content when it starts and shows a message saying what to fix if a value is out of range.
+Tunable numbers live in Godot Resource files under `content/`. Double-click one in Godot's FileSystem panel and edit it in the Inspector. For example, `content/shireen.tres` holds Shireen's move speed, and `content/weapons/zills.tres` the Zills' numbers (damage, seconds between throws, pierce and so on) and what each rank of their four buff tracks adds. The game checks the content when it starts and shows a message saying what to fix if a value is out of range.
 
 ## How the code is laid out
 
-- `src/run/`: the **Run simulation**. Every gameplay rule lives here as plain GDScript objects, with no nodes, input or clock, so it's deterministic and testable headless. See [ADR-0001](docs/adr/0001-run-simulation-seam.md).
+- `src/run/`: the **Run simulation**. Every gameplay rule lives here as plain GDScript objects, with no nodes, input or clock, so it's deterministic and testable headless. See [ADR-0001](docs/adr/0001-run-simulation-seam.md). `src/run/weapons/` holds the weapon behaviors, the stat model they share and the hooks abilities use.
 - `src/content/`: the **content registry** and the data classes behind the files in `content/`. It loads and checks the content before a Run starts.
 - `src/view/`: the **view**, the Godot scenes that draw the Run and feed it keyboard input. They hold no rules.
 - `src/debug/`: the **debug capture** service (the `DebugCapture` autoload). Systems add their state to `state.txt` with `DebugCapture.register_provider("Section", callable)`; `DebugCapture.capture("reason")` saves a snapshot from code.

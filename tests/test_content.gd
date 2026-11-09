@@ -61,3 +61,33 @@ static func steady_uncles(per_second: float, max_admirers: int = 1000) -> Conten
 ## A chosen Shireen chased by real Dowry Uncles arriving on a chosen ramp.
 static func uncles_chasing(shireen: ShireenData, per_second: float, extra_per_second_each_minute: float, max_admirers: int) -> ContentRegistry:
 	return ContentRegistry.from_data(shireen, [real_uncle()], ramping_spawns(&"dowry_uncle", per_second, extra_per_second_each_minute, max_admirers))
+
+
+# --- Weapons ----------------------------------------------------------------
+
+## The real Zills data, loaded from content/weapons/.
+static func real_zills() -> WeaponData:
+	return real().weapons[&"zills"]
+
+
+## The real Zills with some base stats replaced, e.g. {&"pierce": 2.0}. The
+## weapon keeps the id "zills".
+static func zills_with(base_stats: Dictionary[StringName, float]) -> WeaponData:
+	var zills: WeaponData = real_zills().duplicate(true)
+	for stat: StringName in base_stats:
+		zills.base_stats[stat] = base_stats[stat]
+	return zills
+
+
+## The real Dowry Uncle, but with so much HP that no test dazzles him: for
+## tests that need someone to keep throwing at.
+static func tough_uncle() -> AdmirerData:
+	var uncle: AdmirerData = real_uncle().duplicate()
+	uncle.max_hp = 10000.0
+	return uncle
+
+
+## The real Shireen with [param weapon] against [param count] admirers of
+## one type, who all arrive within the first second and no more after that.
+static func weapon_against(weapon: WeaponData, admirer: AdmirerData, count: int) -> ContentRegistry:
+	return ContentRegistry.from_data(real().shireen, [admirer], steady_spawns(admirer.id, 100.0, count), [weapon])

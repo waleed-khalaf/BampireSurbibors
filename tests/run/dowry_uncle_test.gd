@@ -13,7 +13,14 @@ extends GdUnitTestSuite
 ## a 60 Hz frame (16,667 µs), leaving the rest for weapons, pickups and
 ## drawing. The tests print the time they measured; if one fails, find out
 ## what got slower before raising the budget.
-const MEASURED_STEP_USEC: float = 1100.0
+##
+## Measured again on 2026-11-09 with ticket 06 (Zills): both crowds took
+## 1,280–1,360 µs, against 1,150–1,240 for the code before it on the same
+## day. The extra is the crowd marking who touches Shireen each step and the
+## snapshot copying each admirer's HP, state and touching flag. Later that
+## day, with a game and a voice chat running on the machine, the same tests
+## swung between 1,380 and 1,670 from one run to the next.
+const MEASURED_STEP_USEC: float = 1350.0
 const STEP_BUDGET_USEC: float = 3300.0
 
 

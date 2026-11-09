@@ -138,3 +138,167 @@ func test_a_missing_admirer_folder_is_rejected() -> void:
 		"Admirers: no admirer data files in res://tests/content/fixtures/no_admirers_here.",
 		"Spawn ramp: admirer_id \"dowry_uncle\" is not an admirer type. Known types: (none).",
 	])
+
+
+# --- Weapons ----------------------------------------------------------------
+
+func test_the_real_zills_have_the_design_numbers() -> void:
+	# Design §6.1: throws 1 zill every 1.2 s, damage 10, pierce 0.
+	var zills: WeaponData = ContentRegistry.load_default().weapons[&"zills"]
+
+	assert_str(zills.behavior_id).is_equal("zills")
+	assert_float(zills.base_stats[&"count"]).is_equal(1.0)
+	assert_float(zills.base_stats[&"cooldown"]).is_equal(1.2)
+	assert_float(zills.base_stats[&"damage"]).is_equal(10.0)
+	assert_float(zills.base_stats[&"pierce"]).is_equal(0.0)
+
+
+func test_the_real_zills_have_the_four_buff_tracks_of_the_design() -> void:
+	# Design §6.1: Damage, Throw rate, Count, Speed and pierce.
+	var zills: WeaponData = ContentRegistry.load_default().weapons[&"zills"]
+	var names: Array[String] = []
+	for track: BuffTrackData in zills.buff_tracks:
+		names.append(track.display_name)
+		assert_int(track.max_rank).is_equal(5)
+
+	assert_array(names).is_equal(["Damage", "Throw rate", "Count", "Speed and pierce"])
+
+
+func test_a_weapon_behavior_is_chosen_by_its_id() -> void:
+	var content := ContentRegistry.load_default()
+
+	var behavior: WeaponBehavior = content.create_weapon_behavior(content.weapons[&"zills"])
+
+	assert_bool(behavior is ZillsBehavior).is_true()
+
+
+func _content_with_weapon(weapon: WeaponData) -> ContentRegistry:
+	return ContentRegistry.from_data(TestContent.shireen_with_speed(90.0), [], null, [weapon])
+
+
+func test_a_copy_of_the_real_zills_passes_validation() -> void:
+	assert_array(_content_with_weapon(TestContent.zills_with({})).errors).is_empty()
+
+
+func test_an_unknown_weapon_behavior_id_is_rejected() -> void:
+	var zills := TestContent.zills_with({})
+	zills.behavior_id = &"castanets"
+
+	assert_array(_content_with_weapon(zills).errors).contains_exactly([
+		"Weapon zills: behavior_id \"castanets\" is not a known behavior. Known behaviors: zills.",
+	])
+
+
+func test_a_weapon_missing_a_stat_its_behavior_needs_is_rejected() -> void:
+	var zills := TestContent.zills_with({})
+	zills.base_stats.erase(&"range")
+
+	assert_array(_content_with_weapon(zills).errors).contains_exactly([
+		"Weapon zills: base_stats has no \"range\". Its behavior needs: area, cooldown, count, damage, pierce, range, rate, speed.",
+	])
+
+
+func test_a_weapon_that_never_attacks_is_rejected() -> void:
+	var zills := TestContent.zills_with({&"cooldown": 0.0})
+
+	assert_array(_content_with_weapon(zills).errors).contains_exactly([
+		"Weapon zills: cooldown must be between 0.05 and 60, but it is 0.",
+	])
+
+
+func test_a_weapon_without_exactly_four_buff_tracks_is_rejected() -> void:
+	var zills := TestContent.zills_with({})
+	zills.buff_tracks.pop_back()
+
+	assert_array(_content_with_weapon(zills).errors).contains_exactly([
+		"Weapon zills: it has 3 buff tracks, but a weapon needs exactly 4.",
+	])
+
+
+func test_a_buff_that_changes_a_stat_the_weapon_does_not_have_is_rejected() -> void:
+	var zills := TestContent.zills_with({})
+	zills.buff_tracks[0].modifiers[0].stat = &"dammage"
+
+	assert_array(_content_with_weapon(zills).errors).contains_exactly([
+		"Weapon zills, buff track damage: a modifier changes \"dammage\", which is not one of the weapon's stats (area, cooldown, count, damage, pierce, range, rate, speed).",
+	])
+
+
+func test_a_buff_granted_at_a_rank_the_track_does_not_have_is_rejected() -> void:
+	var zills := TestContent.zills_with({})
+	# The Count track: +1 zill at ranks 1, 3 and... 7.
+	zills.buff_tracks[2].modifiers[0].ranks = PackedInt32Array([1, 3, 7])
+
+	assert_array(_content_with_weapon(zills).errors).contains_exactly([
+		"Weapon zills, buff track count: a modifier is granted at rank 7, but the track only has ranks 1 to 5.",
+	])
+
+
+func test_two_buff_tracks_with_the_same_id_are_rejected() -> void:
+	var zills := TestContent.zills_with({})
+	zills.buff_tracks[1].id = &"damage"
+
+	assert_array(_content_with_weapon(zills).errors).contains_exactly([
+		"Weapon zills, buff track damage: the id is used by more than one of the weapon's buff tracks. Each needs its own.",
+	])
+
+
+func test_an_ability_with_an_unknown_behavior_id_is_rejected() -> void:
+	var zills := TestContent.zills_with({})
+	var ability := AbilityData.new()
+	ability.id = &"ricochet"
+	ability.behavior_id = &"bounce"
+	zills.abilities.append(ability)
+
+	assert_array(_content_with_weapon(zills).errors).contains_exactly([
+		"Weapon zills, ability ricochet: behavior_id \"bounce\" is not a known ability behavior. Known behaviors: (none).",
+	])
+
+
+func test_an_ability_modifier_that_lists_ranks_is_rejected() -> void:
+	var zills := TestContent.zills_with({})
+	var modifier := StatModifierData.new()
+	modifier.stat = &"damage"
+	modifier.ranks = PackedInt32Array([3])
+	var ability := AbilityData.new()
+	ability.id = &"ricochet"
+	ability.modifiers.append(modifier)
+	zills.abilities.append(ability)
+
+	assert_array(_content_with_weapon(zills).errors).contains([
+		"Weapon zills, ability ricochet: a modifier lists ranks, but only buff tracks have ranks. Clear its ranks.",
+	])
+
+
+func test_a_buff_track_with_more_than_five_ranks_is_rejected() -> void:
+	var zills := TestContent.zills_with({})
+	zills.buff_tracks[0].max_rank = 6
+
+	assert_array(_content_with_weapon(zills).errors).contains_exactly([
+		"Weapon zills, buff track damage: max_rank must be between 1 and 5, but it is 6.",
+	])
+
+
+func test_two_weapons_with_the_same_id_are_rejected() -> void:
+	var content := ContentRegistry.from_data(TestContent.shireen_with_speed(90.0), [], null, [TestContent.zills_with({}), TestContent.zills_with({})])
+
+	assert_array(content.errors).contains_exactly([
+		"Weapon zills: the id is used by more than one weapon. Each needs its own.",
+	])
+
+
+func test_a_missing_weapon_folder_is_rejected() -> void:
+	var content := ContentRegistry.load_from(ContentRegistry.SHIREEN_PATH, ContentRegistry.ADMIRERS_DIR, ContentRegistry.SPAWN_RAMP_PATH, "res://tests/content/fixtures/no_weapons_here")
+
+	assert_array(content.errors).contains_exactly([
+		"Weapons: no weapon data files in res://tests/content/fixtures/no_weapons_here.",
+	])
+
+
+func test_an_admirer_who_swoons_forever_is_rejected() -> void:
+	var uncle := _uncle()
+	uncle.swoon_seconds = 60.0
+
+	assert_array(_content_with([uncle]).errors).contains_exactly([
+		"Admirer dowry_uncle: swoon_seconds must be between 0 and 5 s, but it is 60.",
+	])
