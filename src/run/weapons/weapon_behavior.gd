@@ -41,7 +41,8 @@ var _buff_ranks: Dictionary[StringName, int] = {}
 var _abilities: Array[AbilityBehavior] = []
 ## Seconds since each ability's periodic hook last ran, by ability index.
 var _period_elapsed: PackedFloat64Array = PackedFloat64Array()
-## How far through the cooldown the weapon is, from 0 to 1.
+## How far through the cooldown the weapon is: 0 right after an attack, 1
+## when it is ready for the next.
 var _charge: float = 0.0
 var _attack_count: int = 0
 
@@ -55,7 +56,8 @@ func _init(p_data: WeaponData) -> void:
 
 ## The stats this weapon reads and the range each must be in, as
 ## name -> [lowest, highest]. The content registry checks a weapon's
-## base_stats against it. Subclasses add their own stats to the result.
+## base_stats against it, and what the weapon's buff tracks and abilities can
+## make of them. Subclasses add their own stats to the result.
 ## (A pair in an Array, not a Vector2: a Vector2 holds 32-bit numbers, which
 ## would turn 0.05 into 0.0500000007 in the error message.)
 func stat_ranges() -> Dictionary[StringName, Array]:
@@ -76,12 +78,16 @@ func step(delta: float, p_shireen_position: Vector2, p_shireen_facing: Vector2, 
 
 	_advance(delta)
 
-	_charge += delta * stats.value(Stats.RATE) / stats.value(Stats.COOLDOWN)
+	# A weapon that is ready but can't attack yet (nobody to throw at) stops
+	# charging. It attacks the moment it can, and the time it waited doesn't
+	# shorten the cooldown after that.
+	if _charge < READY:
+		_charge += delta * stats.value(Stats.RATE) / stats.value(Stats.COOLDOWN)
 	if _charge >= READY and _can_attack():
 		# What is over a full charge counts toward the next attack. A
 		# cooldown is rarely a whole number of steps, and dropping the rest
 		# would round every wait up: "+12% throw rate" would give 10.8%.
-		_charge = minf(_charge - 1.0, 1.0)
+		_charge -= 1.0
 		_attack_count += 1
 		var attack := WeaponAttack.new(_attack_count)
 		for ability: AbilityBehavior in _abilities:
@@ -91,10 +97,6 @@ func step(delta: float, p_shireen_position: Vector2, p_shireen_facing: Vector2, 
 			if nth > 0 and attack.number % nth == 0:
 				ability.on_nth_attack(self, attack)
 		_attack(attack)
-	else:
-		# A weapon that can't attack yet (nobody to throw at) stays fully
-		# charged, no more, and attacks the moment it can.
-		_charge = minf(_charge, 1.0)
 
 	for i: int in _abilities.size():
 		var period: float = _abilities[i].period()
@@ -102,7 +104,10 @@ func step(delta: float, p_shireen_position: Vector2, p_shireen_facing: Vector2, 
 			continue
 		_period_elapsed[i] += delta
 		if _period_elapsed[i] >= period * READY:
-			_period_elapsed[i] = 0.0
+			# What is over the period counts toward the next one, as with the
+			# cooldown. (Never more than a whole period: the hook runs at
+			# most once a step.)
+			_period_elapsed[i] = minf(_period_elapsed[i] - period, period)
 			_abilities[i].on_period(self)
 
 

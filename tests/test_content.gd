@@ -45,8 +45,8 @@ static func ramping_spawns(admirer_id: StringName, per_second: float, extra_per_
 
 
 ## The real Shireen and Dowry Uncle, with [param count] Uncles arriving as
-## fast as the content allows (100 per second, so the first on step 1) and
-## no more after that.
+## fast as the content allows (100 per second, so the first on step 1).
+## [param count] is the spawn cap: no more arrive while that many are chasing.
 static func uncle_crowd(count: int) -> ContentRegistry:
 	var content := real()
 	return ContentRegistry.from_data(content.shireen, [real_uncle()], steady_spawns(&"dowry_uncle", 100.0, count))
@@ -88,6 +88,7 @@ static func tough_uncle() -> AdmirerData:
 
 
 ## The real Shireen with [param weapon] against [param count] admirers of
-## one type, who all arrive within the first second and no more after that.
+## one type, who all arrive within the first second. [param count] is the
+## spawn cap: another arrives only to replace one who was dazzled.
 static func weapon_against(weapon: WeaponData, admirer: AdmirerData, count: int) -> ContentRegistry:
 	return ContentRegistry.from_data(real().shireen, [admirer], steady_spawns(admirer.id, 100.0, count), [weapon])

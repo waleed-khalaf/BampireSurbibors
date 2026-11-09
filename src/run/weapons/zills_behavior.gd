@@ -53,8 +53,8 @@ func stat_ranges() -> Dictionary[StringName, Array]:
 	ranges[COUNT] = [1.0, 20.0]
 	ranges[PIERCE] = [0.0, 100.0]
 	# A zill only checks for hits where it stands after each step. At 600
-	# px/s that is every 10 px (15 with the speed buffs maxed), still less
-	# than the width of an admirer; much faster and it could jump over one.
+	# px/s that is every 10 px, still less than the width of an admirer;
+	# much faster and it could jump over one.
 	ranges[SPEED] = [20.0, 600.0]
 	ranges[RANGE] = [16.0, 2000.0]
 	return ranges

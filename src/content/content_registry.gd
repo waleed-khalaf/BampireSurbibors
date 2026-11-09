@@ -253,16 +253,24 @@ func _validate() -> void:
 
 func _validate_weapon(weapon: WeaponData) -> void:
 	var label: String = "Weapon %s" % weapon.id
+	# Nothing below can read an empty slot, so those are reported alone.
+	if _has_empty_slots(label, weapon):
+		return
+
 	if WEAPON_BEHAVIORS.has(weapon.behavior_id):
 		# The behavior says which stats it reads and what range each must be
 		# in. One missing stat is one message listing them all, so the fix
 		# doesn't take a restart per stat.
 		var ranges: Dictionary[StringName, Array] = create_weapon_behavior(weapon).stat_ranges()
 		for stat: StringName in ranges:
+			var low: float = ranges[stat][0]
+			var high: float = ranges[stat][1]
 			if not weapon.base_stats.has(stat):
 				errors.append("%s: base_stats has no \"%s\". Its behavior needs: %s." % [label, stat, _name_list(ranges.keys())])
+			elif weapon.base_stats[stat] < low or weapon.base_stats[stat] > high:
+				_check_range(label, stat, weapon.base_stats[stat], low, high, "")
 			else:
-				_check_range(label, stat, weapon.base_stats[stat], ranges[stat][0], ranges[stat][1], "")
+				_check_modified_range(label, weapon, stat, low, high)
 	else:
 		errors.append("%s: behavior_id \"%s\" is not a known behavior. Known behaviors: %s." % [
 			label, weapon.behavior_id, _name_list(WEAPON_BEHAVIORS.keys()),
@@ -298,6 +306,74 @@ func _validate_weapon(weapon: WeaponData) -> void:
 			_check_modifier_stat(ability_label, modifier, weapon)
 			if not modifier.ranks.is_empty():
 				errors.append("%s: a modifier lists ranks, but only buff tracks have ranks. Clear its ranks." % ability_label)
+
+
+## Records an error for every empty slot in [param weapon]'s lists: what
+## the Inspector leaves behind when a slot is added and never filled.
+## Returns whether it found any.
+func _has_empty_slots(label: String, weapon: WeaponData) -> bool:
+	var found: bool = _check_slots(label, "buff track", weapon.buff_tracks)
+	for track: BuffTrackData in weapon.buff_tracks:
+		if track != null:
+			found = _check_slots("%s, buff track %s" % [label, track.id], "modifier", track.modifiers) or found
+	found = _check_slots(label, "ability", weapon.abilities) or found
+	for ability: AbilityData in weapon.abilities:
+		if ability != null:
+			found = _check_slots("%s, ability %s" % [label, ability.id], "modifier", ability.modifiers) or found
+	return found
+
+
+## Records "<label>: <what> slot N is empty..." for every empty slot in
+## [param slots], counting from 1 as the Inspector's reader would. Returns
+## whether it found any.
+func _check_slots(label: String, what: String, slots: Array) -> bool:
+	var found: bool = false
+	for i: int in slots.size():
+		if slots[i] == null:
+			errors.append("%s: %s slot %d is empty. Fill it, or remove the slot." % [label, what, i + 1])
+			found = true
+	return found
+
+
+## Records an error when [param weapon]'s buff tracks and abilities could
+## take [param stat] outside [param low] to [param high]: "-1 zill a rank"
+## would leave nothing to throw, "-100% cooldown" no pause between attacks.
+## It looks at the furthest the stat could go either way, with every track
+## at any rank and every ability gained or not.
+func _check_modified_range(label: String, weapon: WeaponData, stat: StringName, low: float, high: float) -> void:
+	# The most the modifiers can add and take away, indexed by
+	# StatModifierData.Kind: plain amounts first, then shares.
+	var most: PackedFloat64Array = [0.0, 0.0]
+	var least: PackedFloat64Array = [0.0, 0.0]
+	for track: BuffTrackData in weapon.buff_tracks:
+		for modifier: StatModifierData in track.modifiers:
+			if modifier.stat == stat:
+				var amount: float = modifier.value * modifier.times_at_rank(track.max_rank)
+				most[modifier.kind] += maxf(amount, 0.0)
+				least[modifier.kind] += minf(amount, 0.0)
+	for ability: AbilityData in weapon.abilities:
+		for modifier: StatModifierData in ability.modifiers:
+			if modifier.stat == stat:
+				most[modifier.kind] += maxf(modifier.value, 0.0)
+				least[modifier.kind] += minf(modifier.value, 0.0)
+
+	# The same sum as Stats.value: (base + added) × (1 + shares), where the
+	# shares can't take the value below zero.
+	var add: int = StatModifierData.Kind.ADD
+	var share: int = StatModifierData.Kind.MULTIPLY
+	var highest: float = (weapon.base_stats[stat] + most[add]) * (1.0 + most[share])
+	var lowest: float = weapon.base_stats[stat] + least[add]
+	# A value already below zero only gets lower with a larger share.
+	lowest *= maxf(1.0 + least[share], 0.0) if lowest >= 0.0 else 1.0 + most[share]
+
+	if lowest < low:
+		errors.append("%s: its buffs and abilities can take %s as low as %s, but it must stay between %s and %s." % [
+			label, stat, _format_number(lowest), _format_number(low), _format_number(high),
+		])
+	if highest > high:
+		errors.append("%s: its buffs and abilities can take %s as high as %s, but it must stay between %s and %s." % [
+			label, stat, _format_number(highest), _format_number(low), _format_number(high),
+		])
 
 
 ## Records an error when [param modifier] changes a stat [param weapon]

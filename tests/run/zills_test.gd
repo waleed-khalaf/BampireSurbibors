@@ -91,6 +91,22 @@ func test_zills_hold_fire_while_no_admirer_is_around() -> void:
 	assert_array(run.snapshot().projectiles).is_empty()
 
 
+func test_after_waiting_for_an_admirer_the_next_throw_is_a_full_cooldown_later() -> void:
+	# One Uncle, who arrives after 2 s: by then the Zills have been ready to
+	# throw for most of a second.
+	var spawns := TestContent.steady_spawns(&"dowry_uncle", 0.5, 1)
+	var content := ContentRegistry.from_data(TestContent.real().shireen, [TestContent.tough_uncle()], spawns, [TestContent.real_zills()])
+	var run := _zills_run(content, 5)
+
+	var throw_ticks: Array[int] = _throw_ticks(run, 5 * Run.STEPS_PER_SECOND)
+
+	# The first throw is late. The time spent waiting for it must not count
+	# toward the next one: 1.2 s is 72 steps, as ever.
+	assert_int(throw_ticks[0]).is_greater(72)
+	assert_int(throw_ticks[1] - throw_ticks[0]).is_equal(72)
+	assert_int(throw_ticks[2] - throw_ticks[1]).is_equal(72)
+
+
 func test_a_zill_flies_at_the_nearest_admirer() -> void:
 	# Five Uncles arrive from all around, each from a different distance.
 	var content := TestContent.weapon_against(TestContent.real_zills(), TestContent.tough_uncle(), 5)

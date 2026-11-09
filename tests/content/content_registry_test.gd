@@ -279,6 +279,65 @@ func test_a_buff_track_with_more_than_five_ranks_is_rejected() -> void:
 	])
 
 
+func test_a_weapon_with_an_empty_buff_track_slot_is_rejected() -> void:
+	var zills := TestContent.zills_with({})
+	# What adding a slot in the Inspector and not filling it leaves behind.
+	zills.buff_tracks[3] = null
+
+	assert_array(_content_with_weapon(zills).errors).contains_exactly([
+		"Weapon zills: buff track slot 4 is empty. Fill it, or remove the slot.",
+	])
+
+
+func test_a_buff_track_with_an_empty_modifier_slot_is_rejected() -> void:
+	var zills := TestContent.zills_with({})
+	zills.buff_tracks[0].modifiers.append(null)
+
+	assert_array(_content_with_weapon(zills).errors).contains_exactly([
+		"Weapon zills, buff track damage: modifier slot 2 is empty. Fill it, or remove the slot.",
+	])
+
+
+func test_a_weapon_with_an_empty_ability_slot_is_rejected() -> void:
+	var zills := TestContent.zills_with({})
+	zills.abilities.append(null)
+
+	assert_array(_content_with_weapon(zills).errors).contains_exactly([
+		"Weapon zills: ability slot 1 is empty. Fill it, or remove the slot.",
+	])
+
+
+func test_a_buff_that_takes_a_stat_below_its_range_is_rejected() -> void:
+	var zills := TestContent.zills_with({})
+	# The Count track: one zill fewer at ranks 1, 3 and 5, instead of one more.
+	zills.buff_tracks[2].modifiers[0].value = -1.0
+
+	assert_array(_content_with_weapon(zills).errors).contains_exactly([
+		"Weapon zills: its buffs and abilities can take count as low as -2, but it must stay between 1 and 20.",
+	])
+
+
+func test_buffs_that_remove_the_whole_cooldown_are_rejected() -> void:
+	var zills := TestContent.zills_with({})
+	# The Throw Rate track: -20% cooldown a rank, so no cooldown at rank 5.
+	zills.buff_tracks[1].modifiers[0].stat = &"cooldown"
+	zills.buff_tracks[1].modifiers[0].value = -0.2
+
+	assert_array(_content_with_weapon(zills).errors).contains_exactly([
+		"Weapon zills: its buffs and abilities can take cooldown as low as 0, but it must stay between 0.05 and 60.",
+	])
+
+
+func test_a_buff_that_takes_a_stat_above_its_range_is_rejected() -> void:
+	var zills := TestContent.zills_with({})
+	# The Speed & Pierce track: +100% zill speed a rank instead of +10%.
+	zills.buff_tracks[3].modifiers[0].value = 1.0
+
+	assert_array(_content_with_weapon(zills).errors).contains_exactly([
+		"Weapon zills: its buffs and abilities can take speed as high as 1320, but it must stay between 20 and 600.",
+	])
+
+
 func test_two_weapons_with_the_same_id_are_rejected() -> void:
 	var content := ContentRegistry.from_data(TestContent.shireen_with_speed(90.0), [], null, [TestContent.zills_with({}), TestContent.zills_with({})])
 
