@@ -276,6 +276,7 @@ func _validate() -> void:
 		_check_range("Pickups", "cash_fly_speed", pickups.cash_fly_speed, 50.0, 2000.0, " px/s")
 		_check_range("Pickups", "tea_drop_chance", pickups.tea_drop_chance, 0.0, 1.0, "")
 		_check_range("Pickups", "tea_patience", pickups.tea_patience, 1.0, 10000.0, "")
+		_check_range("Pickups", "tea_radius", pickups.tea_radius, 1.0, 32.0, " px")
 
 
 func _validate_weapon(weapon: WeaponData) -> void:

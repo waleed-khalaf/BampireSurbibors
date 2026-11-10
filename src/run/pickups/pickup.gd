@@ -25,6 +25,7 @@ enum State {
 ## uses it to follow the same pickup from one snapshot to the next.
 var id: int = 0
 
+## Cash or karkadeh tea.
 var kind: Kind = Kind.CASH
 
 ## Where it is, in world pixels, on the ground like an admirer's feet.
@@ -33,4 +34,5 @@ var position: Vector2 = Vector2.ZERO
 ## How much cash it is worth. 0 for tea.
 var value: int = 0
 
+## Lying on the sand, or (cash only) flying to Shireen.
 var state: State = State.ON_GROUND

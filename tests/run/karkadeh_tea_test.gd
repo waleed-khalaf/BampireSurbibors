@@ -4,14 +4,6 @@ extends GdUnitTestSuite
 ## at the pickups, walk over the cup and watch her Patience.
 
 const SMALL_SCREEN: Vector2 = Vector2(200, 200)
-## How close her 6 px body has to come to a 5 px cup to pick it up.
-const TEA_REACH: float = 11.0
-
-
-## The real Zills, except that one zill dazzles an Uncle, thrown every
-## [param cooldown] seconds.
-func _one_hit_zills(cooldown: float = 1.2) -> WeaponData:
-	return TestContent.zills_with({&"damage": 30.0, &"cooldown": cooldown})
 
 
 ## A Zills run against [param count] admirers of one type, with
@@ -77,7 +69,7 @@ func _walk_over_the_tea(run: Run) -> Array[float]:
 
 
 func test_a_sure_tea_chance_drops_a_cup_with_every_dazzle() -> void:
-	var run := _tea_run(1.0, TestContent.harmless_uncle(), 1, _one_hit_zills(), 5)
+	var run := _tea_run(1.0, TestContent.harmless_uncle(), 1, TestContent.one_hit_zills(), 5)
 
 	_stand_until_someone_is_dazzled(run)
 
@@ -94,7 +86,7 @@ func test_a_sure_tea_chance_drops_a_cup_with_every_dazzle() -> void:
 
 
 func test_no_tea_chance_drops_no_tea() -> void:
-	var run := _tea_run(0.0, TestContent.harmless_uncle(), 1, _one_hit_zills(), 5)
+	var run := _tea_run(0.0, TestContent.harmless_uncle(), 1, TestContent.one_hit_zills(), 5)
 
 	_stand_until_someone_is_dazzled(run)
 
@@ -105,21 +97,25 @@ func test_no_tea_chance_drops_no_tea() -> void:
 func test_tea_waits_on_the_ground_until_shireen_walks_over_it() -> void:
 	# Unlike cash, it doesn't fly to her from 24 px: she has to touch it, so
 	# she can save a cup for later.
-	var run := _tea_run(1.0, TestContent.harmless_uncle(), 1, _one_hit_zills(), 5)
+	var run := _tea_run(1.0, TestContent.harmless_uncle(), 1, TestContent.one_hit_zills(), 5)
 	_stand_until_someone_is_dazzled(run)
 
 	var distance_before: float = _walk_over_the_tea(run)[0]
 
-	# Just before the step she picked it up it was still out of reach, and
-	# one 1.5 px step later within it.
-	assert_float(distance_before).is_between(TEA_REACH, TEA_REACH + 1.5)
+	# She reaches a cup when her body circle touches it: in the real content
+	# her 6 px body against a 5 px cup. Just before the step she picked it up
+	# it was still out of reach, and one 1.5 px step later within it.
+	var content := TestContent.real()
+	var reach: float = content.shireen.body_radius + content.pickups.tea_radius
+	assert_float(reach).is_equal(11.0)
+	assert_float(distance_before).is_between(reach, reach + 1.5)
 
 
 ## A run where the one dazzling throw comes at 10 s, when the one admirer of
 ## [param admirer]'s type has been pressed against Shireen for seconds,
 ## draining her. The tea he drops lands at his feet, 13 px from her.
 func _run_with_a_late_tea_drop(admirer: AdmirerData) -> Run:
-	var run := _tea_run(1.0, admirer, 1, _one_hit_zills(10.0), 5, SMALL_SCREEN)
+	var run := _tea_run(1.0, admirer, 1, TestContent.one_hit_zills(10.0), 5, SMALL_SCREEN)
 	_stand_until_someone_is_dazzled(run)
 	assert_int(_of_kind(run.snapshot(), Pickup.Kind.TEA).size()).is_equal(1)
 	return run
@@ -156,8 +152,8 @@ func test_tea_rolls_come_from_the_seed() -> void:
 	# Her pickup radius covers the screen so the cash is out of the way; the
 	# cups land 13 px from her, just out of reach, and pile up on the sand.
 	var shireen := TestContent.shireen_with_pickup_radius(200.0)
-	var first := _tea_run(0.5, TestContent.harmless_uncle(), 20, _one_hit_zills(0.2), 9, SMALL_SCREEN, shireen)
-	var second := _tea_run(0.5, TestContent.harmless_uncle(), 20, _one_hit_zills(0.2), 9, SMALL_SCREEN, shireen)
+	var first := _tea_run(0.5, TestContent.harmless_uncle(), 20, TestContent.one_hit_zills(0.2), 9, SMALL_SCREEN, shireen)
+	var second := _tea_run(0.5, TestContent.harmless_uncle(), 20, TestContent.one_hit_zills(0.2), 9, SMALL_SCREEN, shireen)
 
 	_stand(first, 12 * Run.STEPS_PER_SECOND)
 	_stand(second, 12 * Run.STEPS_PER_SECOND)

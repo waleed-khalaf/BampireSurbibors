@@ -7,22 +7,9 @@ extends GdUnitTestSuite
 const SMALL_SCREEN: Vector2 = Vector2(200, 200)
 
 
-## The real Zills, except that one zill dazzles an Uncle (30 damage against
-## 30 HP), thrown every [param cooldown] seconds.
-func _one_hit_zills(cooldown: float = 1.2) -> WeaponData:
-	return TestContent.zills_with({&"damage": 30.0, &"cooldown": cooldown})
-
-
 ## A Zills run on [param play_area].
 func _zills_run(content: ContentRegistry, rng_seed: int, play_area: Vector2 = RunConfig.DEFAULT_PLAY_AREA) -> Run:
 	return Run.new(RunConfig.new(content, rng_seed, play_area, &"zills"))
-
-
-## The harmless Dowry Uncle, worth [param cash] instead of his real 2.
-func _uncle_worth(cash: int) -> AdmirerData:
-	var uncle: AdmirerData = TestContent.harmless_uncle()
-	uncle.cash = cash
-	return uncle
 
 
 func _stand(run: Run, ticks: int) -> Array[RunEvent]:
@@ -67,7 +54,7 @@ func test_a_dazzled_uncle_drops_cash_worth_his_value_where_he_stood() -> void:
 	# The real Dowry Uncle is worth 2 cash (design §7). On the full-size
 	# screen the zill meets him well over 100 px out, far outside her 24 px
 	# pickup radius, so the cash lies where it fell.
-	var content := TestContent.weapon_against(_one_hit_zills(), TestContent.harmless_uncle(), 1)
+	var content := TestContent.weapon_against(TestContent.one_hit_zills(), TestContent.harmless_uncle(), 1)
 	var run := _zills_run(content, 5)
 
 	var uncle: AdmirerSnapshot = _stand_until_someone_is_dazzled(run)
@@ -86,7 +73,7 @@ func test_a_dazzled_uncle_drops_cash_worth_his_value_where_he_stood() -> void:
 
 func test_bigger_admirers_drop_bigger_bills() -> void:
 	# Design §7: each type has its own cash value, like the Falconer's 4.
-	var content := TestContent.weapon_against(_one_hit_zills(), _uncle_worth(4), 1)
+	var content := TestContent.weapon_against(TestContent.one_hit_zills(), TestContent.uncle_worth(4), 1)
 	var run := _zills_run(content, 5)
 
 	_stand_until_someone_is_dazzled(run)
@@ -95,7 +82,7 @@ func test_bigger_admirers_drop_bigger_bills() -> void:
 
 
 func test_cash_outside_the_pickup_radius_lies_where_it_fell() -> void:
-	var content := TestContent.weapon_against(_one_hit_zills(), TestContent.harmless_uncle(), 1)
+	var content := TestContent.weapon_against(TestContent.one_hit_zills(), TestContent.harmless_uncle(), 1)
 	var run := _zills_run(content, 5)
 	_stand_until_someone_is_dazzled(run)
 	var dropped: Vector2 = _pickup(run.snapshot(), 1).position
@@ -115,7 +102,7 @@ func test_cash_outside_the_pickup_radius_lies_where_it_fell() -> void:
 ## radius is [param pickup_radius].
 func _run_with_cash_on_the_ground(pickup_radius: float) -> Run:
 	var shireen := TestContent.shireen_with_pickup_radius(pickup_radius)
-	var content := TestContent.weapon_against(_one_hit_zills(), TestContent.harmless_uncle(), 1, shireen)
+	var content := TestContent.weapon_against(TestContent.one_hit_zills(), TestContent.harmless_uncle(), 1, shireen)
 	var run := _zills_run(content, 5)
 	_stand_until_someone_is_dazzled(run)
 	assert_int(_pickup(run.snapshot(), 1).state).is_equal(Pickup.State.ON_GROUND)
@@ -203,7 +190,7 @@ func test_flying_cash_catches_shireen_even_as_she_walks_away() -> void:
 ## radius covers the whole small screen, so every bill flies to her at once.
 func _run_collecting_fast(cash: int, leveling: LevelingData = null) -> Run:
 	var shireen := TestContent.shireen_with_pickup_radius(200.0)
-	var content := ContentRegistry.from_data(shireen, [_uncle_worth(cash)], TestContent.steady_spawns(&"dowry_uncle", 100.0, 20), [_one_hit_zills(0.2)], leveling)
+	var content := ContentRegistry.from_data(shireen, [TestContent.uncle_worth(cash)], TestContent.steady_spawns(&"dowry_uncle", 100.0, 20), [TestContent.one_hit_zills(0.2)], leveling)
 	return _zills_run(content, 9, SMALL_SCREEN)
 
 
@@ -319,7 +306,7 @@ func test_the_same_seed_drops_and_collects_the_same_cash() -> void:
 
 ## The F12 state dump is built from the snapshot's plain-data form (RunView).
 func test_the_state_dump_reports_the_cash_the_level_and_the_pickups() -> void:
-	var run := _zills_run(TestContent.weapon_against(_one_hit_zills(), TestContent.harmless_uncle(), 1), 5)
+	var run := _zills_run(TestContent.weapon_against(TestContent.one_hit_zills(), TestContent.harmless_uncle(), 1), 5)
 	_stand_until_someone_is_dazzled(run)
 
 	var state: Dictionary = run.snapshot().to_dict()
@@ -333,3 +320,40 @@ func test_the_state_dump_reports_the_cash_the_level_and_the_pickups() -> void:
 	assert_str(pickups[0]["kind"]).is_equal("cash")
 	assert_str(pickups[0]["state"]).is_equal("on_ground")
 	assert_int(pickups[0]["value"]).is_equal(2)
+
+
+# --- Performance ------------------------------------------------------------
+
+## The step budget from tests/run/dowry_uncle_test.gd, where it is calibrated:
+## 20% of a 60 Hz frame for a step plus the snapshot after it, the pair the
+## view pays for every frame.
+const STEP_BUDGET_USEC: float = 3300.0
+
+
+## Hundreds of bills on the sand on top of the full crowd of 300: every step
+## looks at each bill and the snapshot copies them all. Shireen's pickup
+## radius is the smallest the content allows, so nothing is ever collected
+## and the bills pile up around her. Five one-hit zills every 0.1 s dazzle
+## about 50 Uncles a second, each replaced at once.
+##
+## Measured on the user's machine (2026-11-10): about 2,500 µs with 617
+## bills, against 1,200 for the crowd of 300 alone. Most of the difference
+## is the snapshot copying every bill, which the view reads every frame.
+func test_hundreds_of_bills_on_the_sand_step_within_the_time_budget() -> void:
+	var shireen := TestContent.shireen_with_pickup_radius(1.0)
+	var zills := TestContent.zills_with({&"damage": 30.0, &"cooldown": 0.1, &"count": 5.0})
+	var content := ContentRegistry.from_data(shireen, [TestContent.harmless_uncle()], TestContent.steady_spawns(&"dowry_uncle", 100.0, 300), [zills])
+	var run := _zills_run(content, 17)
+	_stand(run, 15 * Run.STEPS_PER_SECOND)
+	var snapshot := run.snapshot()
+	assert_int(snapshot.pickups.size()).is_greater(500)
+	assert_int(snapshot.admirer_count).is_equal(300)
+
+	var started: int = Time.get_ticks_usec()
+	for i: int in 300:
+		run.step(Run.TIMESTEP, Vector2.ZERO)
+		run.snapshot()
+	var average_usec: float = float(Time.get_ticks_usec() - started) / 300
+
+	print("%d bills and %d admirers: %.0f µs per step and snapshot (budget %.0f)" % [snapshot.pickups.size(), snapshot.admirer_count, average_usec, STEP_BUDGET_USEC])
+	assert_float(average_usec).is_less(STEP_BUDGET_USEC)

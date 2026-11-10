@@ -60,11 +60,9 @@ var _last_admirer_id: int = 0
 var _weapon: WeaponBehavior
 
 ## The cash and tea on the sand, and the pool their records come from.
-var _pickups: PickupField = PickupField.new()
+var _pickups: PickupField
 var _pickup_data: PickupData
 var _leveling: LevelingData
-var _shireen_radius: float
-var _pickup_radius: float
 ## All the cash she has collected this run, for the end screen.
 var _cash_collected: int = 0
 var _level: int = 1
@@ -80,10 +78,9 @@ func _init(config: RunConfig) -> void:
 	_shireen_speed = content.shireen.move_speed
 	_max_patience = content.shireen.max_patience
 	_patience = _max_patience
-	_shireen_radius = content.shireen.body_radius
-	_pickup_radius = content.shireen.pickup_radius
 	_pickup_data = content.pickups
 	_leveling = content.leveling
+	_pickups = PickupField.new(content.shireen.body_radius, content.shireen.pickup_radius, _pickup_data.cash_fly_speed, _pickup_data.tea_radius)
 	# The Run's private RNG. Every random choice (where admirers spawn, tea
 	# drops, later card offers and lamp rolls) draws from it, so a seed
 	# replays a whole run.
@@ -246,7 +243,7 @@ func _drop_from_dazzled() -> void:
 ## Moves the pickups and takes in what Shireen collected: cash fills the
 ## level bar, each level-up being an event, and tea restores Patience.
 func _collect_pickups(delta: float, events: Array[RunEvent]) -> void:
-	_pickups.step(delta, _shireen_position, _shireen_radius, _pickup_radius, _pickup_data.cash_fly_speed)
+	_pickups.step(delta, _shireen_position)
 	for pickup: Pickup in _pickups.collected:
 		if pickup.kind == Pickup.Kind.TEA:
 			_patience = minf(_patience + _pickup_data.tea_patience, _max_patience)

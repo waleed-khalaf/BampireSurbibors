@@ -16,3 +16,8 @@ extends Resource
 
 ## How much Patience a cup of karkadeh tea restores, never past her maximum.
 @export var tea_patience: float = 30.0
+
+## A cup's radius in pixels: Shireen picks it up when her body circle
+## touches it. Tea never flies to her, so a cup can be left for later. About
+## half its 16 px sprite.
+@export var tea_radius: float = 5.0

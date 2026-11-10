@@ -66,8 +66,9 @@ const UNCLE_FRAMES: Array[Dictionary] = [
 	{"bob": 0, "step": 0, "swoon": true},  # Dazzled: feet together, hand on heart.
 ]
 
-## Projectile sheets are one row of 16×16 frames, centred on (8, 8).
-const PROJECTILE_FRAME_SIZE: Vector2i = Vector2i(16, 16)
+## Projectile, effect and pickup sheets are one row of 16×16 frames, each
+## centred on (8, 8).
+const SMALL_FRAME_SIZE: Vector2i = Vector2i(16, 16)
 
 var _colors: Dictionary[String, Color] = {}
 var _force: bool = false
@@ -323,10 +324,10 @@ func _draw_uncle(canvas: Canvas, bob: int, step: int, swoon: bool) -> void:
 ## A zill (finger cymbal) spinning in flight: two 16×16 frames, face-on and
 ## edge-on. The disc is 4 px in radius, the zill's size in the weapon data.
 func _draw_zill_sheet() -> Image:
-	var image := Image.create_empty(PROJECTILE_FRAME_SIZE.x * 2, PROJECTILE_FRAME_SIZE.y, false, Image.FORMAT_RGBA8)
+	var image := Image.create_empty(SMALL_FRAME_SIZE.x * 2, SMALL_FRAME_SIZE.y, false, Image.FORMAT_RGBA8)
 
 	# Face-on: a brass disc with a raised boss in the middle and a glint.
-	var face := Canvas.new(image, Vector2i(0, 0), PROJECTILE_FRAME_SIZE)
+	var face := Canvas.new(image, Vector2i(0, 0), SMALL_FRAME_SIZE)
 	face.ellipse(8, 8, 4.5, 4.5, c("gold"))
 	face.ellipse(8.5, 8.5, 3.5, 3.5, c("gold_dark"), 999, false)
 	face.ellipse(7.5, 7.5, 3.5, 3.5, c("gold"))
@@ -337,7 +338,7 @@ func _draw_zill_sheet() -> Image:
 	face.outline(c("ink"))
 
 	# Edge-on: the same disc seen from the side, with the boss on top.
-	var edge := Canvas.new(image, Vector2i(PROJECTILE_FRAME_SIZE.x, 0), PROJECTILE_FRAME_SIZE)
+	var edge := Canvas.new(image, Vector2i(SMALL_FRAME_SIZE.x, 0), SMALL_FRAME_SIZE)
 	edge.ellipse(8, 8.5, 4.5, 1.5, c("gold"))
 	edge.hline(5, 10, 9, c("gold_dark"))
 	edge.hline(7, 8, 6, c("gold"))
@@ -349,9 +350,9 @@ func _draw_zill_sheet() -> Image:
 ## The heart that pops over a dazzled admirer: two 16×16 frames, a small
 ## heart and then the full one, both centred on (8, 8).
 func _draw_heart_sheet() -> Image:
-	var image := Image.create_empty(PROJECTILE_FRAME_SIZE.x * 2, PROJECTILE_FRAME_SIZE.y, false, Image.FORMAT_RGBA8)
+	var image := Image.create_empty(SMALL_FRAME_SIZE.x * 2, SMALL_FRAME_SIZE.y, false, Image.FORMAT_RGBA8)
 
-	var small := Canvas.new(image, Vector2i(0, 0), PROJECTILE_FRAME_SIZE)
+	var small := Canvas.new(image, Vector2i(0, 0), SMALL_FRAME_SIZE)
 	small.px(6, 6, c("rose"))
 	small.px(8, 6, c("rose"))
 	small.hline(5, 9, 7, c("rose"))
@@ -359,7 +360,7 @@ func _draw_heart_sheet() -> Image:
 	small.px(7, 9, c("rose"))
 	small.outline(c("ink"))
 
-	var big := Canvas.new(image, Vector2i(PROJECTILE_FRAME_SIZE.x, 0), PROJECTILE_FRAME_SIZE)
+	var big := Canvas.new(image, Vector2i(SMALL_FRAME_SIZE.x, 0), SMALL_FRAME_SIZE)
 	big.hline(4, 5, 4, c("rose"))
 	big.hline(9, 10, 4, c("rose"))
 	big.hline(3, 6, 5, c("rose"))
@@ -383,20 +384,20 @@ func _draw_heart_sheet() -> Image:
 ## for bigger and bigger bills: one bill, a small stack, and a fat wad with a
 ## gold band. The game picks the frame by the bill's value.
 func _draw_cash_sheet() -> Image:
-	var image := Image.create_empty(PROJECTILE_FRAME_SIZE.x * 3, PROJECTILE_FRAME_SIZE.y, false, Image.FORMAT_RGBA8)
+	var image := Image.create_empty(SMALL_FRAME_SIZE.x * 3, SMALL_FRAME_SIZE.y, false, Image.FORMAT_RGBA8)
 
-	var one := Canvas.new(image, Vector2i(0, 0), PROJECTILE_FRAME_SIZE)
+	var one := Canvas.new(image, Vector2i(0, 0), SMALL_FRAME_SIZE)
 	_draw_bill(one, 4, 6, 8, 5)
 	one.outline(c("ink"))
 
 	# Two bills, the top one shifted up and across.
-	var stack := Canvas.new(image, Vector2i(PROJECTILE_FRAME_SIZE.x, 0), PROJECTILE_FRAME_SIZE)
+	var stack := Canvas.new(image, Vector2i(SMALL_FRAME_SIZE.x, 0), SMALL_FRAME_SIZE)
 	_draw_bill(stack, 3, 7, 9, 5)
 	_draw_bill(stack, 4, 4, 9, 5)
 	stack.outline(c("ink"))
 
 	# A wad: a thick edge under a big bill, with a gold band around it.
-	var wad := Canvas.new(image, Vector2i(PROJECTILE_FRAME_SIZE.x * 2, 0), PROJECTILE_FRAME_SIZE)
+	var wad := Canvas.new(image, Vector2i(SMALL_FRAME_SIZE.x * 2, 0), SMALL_FRAME_SIZE)
 	wad.rect(3, 10, 11, 2, c("leaf_dark"))
 	_draw_bill(wad, 3, 3, 11, 7)
 	wad.vline(8, 3, 11, c("gold"))
@@ -418,8 +419,8 @@ func _draw_bill(canvas: Canvas, x: int, y: int, w: int, h: int) -> void:
 ## A cup of karkadeh tea: a glass of ruby-red tea on a saucer, with a wisp of
 ## steam. One 16×16 frame centred on (8, 8).
 func _draw_tea_sheet() -> Image:
-	var image := Image.create_empty(PROJECTILE_FRAME_SIZE.x, PROJECTILE_FRAME_SIZE.y, false, Image.FORMAT_RGBA8)
-	var cup := Canvas.new(image, Vector2i(0, 0), PROJECTILE_FRAME_SIZE)
+	var image := Image.create_empty(SMALL_FRAME_SIZE.x, SMALL_FRAME_SIZE.y, false, Image.FORMAT_RGBA8)
+	var cup := Canvas.new(image, Vector2i(0, 0), SMALL_FRAME_SIZE)
 	# The saucer.
 	cup.ellipse(8, 12.5, 5.5, 1.5, c("car_white"))
 	cup.hline(4, 11, 13, c("chrome"))

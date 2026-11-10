@@ -70,6 +70,14 @@ static func pickups(tea_drop_chance: float) -> PickupData:
 	return data
 
 
+## The harmless Dowry Uncle (see [method harmless_uncle]), worth
+## [param cash] instead of his real 2: for tests about what a drop is worth.
+static func uncle_worth(cash: int) -> AdmirerData:
+	var uncle: AdmirerData = harmless_uncle()
+	uncle.cash = cash
+	return uncle
+
+
 ## A content set whose only difference from the defaults is Shireen's speed.
 ## No admirers arrive, so tests about walking aren't disturbed.
 static func with_shireen_speed(move_speed: float) -> ContentRegistry:
@@ -143,6 +151,13 @@ static func zills_with(base_stats: Dictionary[StringName, float]) -> WeaponData:
 	for stat: StringName in base_stats:
 		zills.base_stats[stat] = base_stats[stat]
 	return zills
+
+
+## The real Zills, except that one zill dazzles an Uncle (30 damage against
+## his 30 HP), thrown every [param cooldown] seconds: for tests about what a
+## dazzle brings rather than about the throwing.
+static func one_hit_zills(cooldown: float = 1.2) -> WeaponData:
+	return zills_with({&"damage": 30.0, &"cooldown": cooldown})
 
 
 ## A harmless Uncle (see [method harmless_uncle]) with so much HP that no test
