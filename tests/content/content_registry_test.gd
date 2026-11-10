@@ -374,3 +374,61 @@ func test_an_admirer_who_swoons_forever_is_rejected() -> void:
 	assert_array(_content_with([uncle]).errors).contains_exactly([
 		"Admirer dowry_uncle: swoon_seconds must be between 0 and 5 s, but it is 60.",
 	])
+
+
+# --- Cash, leveling and karkadeh tea (ticket 07) ----------------------------
+
+func test_the_real_content_gives_shireen_a_24_pixel_pickup_radius() -> void:
+	# Design §4: cash within 24 px flies to her.
+	assert_float(ContentRegistry.load_default().shireen.pickup_radius).is_equal(24.0)
+
+
+func test_the_real_leveling_curve_is_5_plus_3_per_level() -> void:
+	# Design §5: cash for level n -> n+1 is 5 + 3·(n−1).
+	var leveling: LevelingData = ContentRegistry.load_default().leveling
+
+	assert_int(leveling.cash_for_first_level_up).is_equal(5)
+	assert_int(leveling.extra_cash_each_level).is_equal(3)
+	assert_int(leveling.cash_to_level_up_from(1)).is_equal(5)
+	assert_int(leveling.cash_to_level_up_from(2)).is_equal(8)
+	assert_int(leveling.cash_to_level_up_from(10)).is_equal(32)
+
+
+func test_the_real_karkadeh_tea_drops_1_percent_of_the_time_and_restores_30_patience() -> void:
+	# Design §4: ~1% per dazzle, restores 30 Patience.
+	var pickups: PickupData = ContentRegistry.load_default().pickups
+
+	assert_float(pickups.tea_drop_chance).is_equal(0.01)
+	assert_float(pickups.tea_patience).is_equal(30.0)
+
+
+func test_a_shireen_with_no_pickup_radius_is_rejected() -> void:
+	var content := ContentRegistry.from_data(TestContent.shireen_with_pickup_radius(0.0))
+
+	assert_array(content.errors).contains_exactly([
+		"Shireen: pickup_radius must be between 1 and 200 px, but it is 0.",
+	])
+
+
+func test_a_leveling_curve_with_a_free_first_level_is_rejected() -> void:
+	var content := ContentRegistry.from_data(TestContent.shireen_with_speed(90.0), [], null, [], TestContent.leveling(0, 3))
+
+	assert_array(content.errors).contains_exactly([
+		"Leveling: cash_for_first_level_up must be between 1 and 1000, but it is 0.",
+	])
+
+
+func test_a_tea_drop_chance_above_100_percent_is_rejected() -> void:
+	var content := ContentRegistry.from_data(TestContent.shireen_with_speed(90.0), [], null, [], null, TestContent.pickups(2.0))
+
+	assert_array(content.errors).contains_exactly([
+		"Pickups: tea_drop_chance must be between 0 and 1, but it is 2.",
+	])
+
+
+func test_a_missing_leveling_file_is_rejected_with_its_path() -> void:
+	var content := ContentRegistry.load_from(ContentRegistry.SHIREEN_PATH, ContentRegistry.ADMIRERS_DIR, ContentRegistry.SPAWN_RAMP_PATH, ContentRegistry.WEAPONS_DIR, MISSING_PATH)
+
+	assert_array(content.errors).contains_exactly([
+		"Leveling: no data file at %s." % MISSING_PATH,
+	])

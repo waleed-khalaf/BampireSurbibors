@@ -2,7 +2,6 @@ class_name ShireenData
 extends Resource
 ## Shireen's tunable numbers. The real values live in
 ## res://content/shireen.tres: open it in the Godot inspector to change them.
-## Later tickets add her pickup radius here.
 
 ## How much Patience she starts a run with, which is also the most she can
 ## have. Touching admirers drain it, and at 0 the run ends on "You said yes."
@@ -14,3 +13,7 @@ extends Resource
 ## Radius of her body circle in pixels. Admirers press up against its edge
 ## instead of standing on top of her.
 @export var body_radius: float = 6.0
+
+## Cash lying within this many pixels of her flies to her (design §4). The
+## Gold Bangles passive widens it (ticket 21).
+@export var pickup_radius: float = 24.0

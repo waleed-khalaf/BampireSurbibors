@@ -87,6 +87,8 @@ func _init() -> void:
 	_save_image(_draw_uncle_sheet(), "res://art/admirers/dowry_uncle.png")
 	_save_image(_draw_zill_sheet(), "res://art/projectiles/zill.png")
 	_save_image(_draw_heart_sheet(), "res://art/effects/heart.png")
+	_save_image(_draw_cash_sheet(), "res://art/pickups/cash.png")
+	_save_image(_draw_tea_sheet(), "res://art/pickups/karkadeh_tea.png")
 	_save_image(_draw_sand_tile(), "res://art/world/sand.png")
 	_save_image(_draw_palm_tree(), "res://art/props/palm_tree.png")
 	_save_image(_draw_lada_taxi(), "res://art/props/lada_taxi.png")
@@ -372,6 +374,70 @@ func _draw_heart_sheet() -> Image:
 	big.px(5, 5, c("car_white"))
 	big.px(4, 6, c("car_white"))
 	big.outline(c("ink"))
+	return image
+
+
+# --- Pickups ----------------------------------------------------------------
+
+## The cash dazzled admirers drop: three 16×16 frames, each centred on (8, 8),
+## for bigger and bigger bills: one bill, a small stack, and a fat wad with a
+## gold band. The game picks the frame by the bill's value.
+func _draw_cash_sheet() -> Image:
+	var image := Image.create_empty(PROJECTILE_FRAME_SIZE.x * 3, PROJECTILE_FRAME_SIZE.y, false, Image.FORMAT_RGBA8)
+
+	var one := Canvas.new(image, Vector2i(0, 0), PROJECTILE_FRAME_SIZE)
+	_draw_bill(one, 4, 6, 8, 5)
+	one.outline(c("ink"))
+
+	# Two bills, the top one shifted up and across.
+	var stack := Canvas.new(image, Vector2i(PROJECTILE_FRAME_SIZE.x, 0), PROJECTILE_FRAME_SIZE)
+	_draw_bill(stack, 3, 7, 9, 5)
+	_draw_bill(stack, 4, 4, 9, 5)
+	stack.outline(c("ink"))
+
+	# A wad: a thick edge under a big bill, with a gold band around it.
+	var wad := Canvas.new(image, Vector2i(PROJECTILE_FRAME_SIZE.x * 2, 0), PROJECTILE_FRAME_SIZE)
+	wad.rect(3, 10, 11, 2, c("leaf_dark"))
+	_draw_bill(wad, 3, 3, 11, 7)
+	wad.vline(8, 3, 11, c("gold"))
+	wad.vline(9, 3, 11, c("gold_light"))
+	wad.outline(c("ink"))
+	return image
+
+
+## One banknote lying flat: a green rectangle with a lighter border and a
+## gold seal in the middle. [param w] and [param h] are at least 5.
+func _draw_bill(canvas: Canvas, x: int, y: int, w: int, h: int) -> void:
+	canvas.rect(x, y, w, h, c("leaf"))
+	canvas.rect(x + 1, y + 1, w - 2, h - 2, c("leaf_light"))
+	canvas.rect(x + 2, y + 2, w - 4, h - 4, c("leaf"))
+	@warning_ignore("integer_division")
+	canvas.px(x + w / 2, y + h / 2, c("gold_light"))
+
+
+## A cup of karkadeh tea: a glass of ruby-red tea on a saucer, with a wisp of
+## steam. One 16×16 frame centred on (8, 8).
+func _draw_tea_sheet() -> Image:
+	var image := Image.create_empty(PROJECTILE_FRAME_SIZE.x, PROJECTILE_FRAME_SIZE.y, false, Image.FORMAT_RGBA8)
+	var cup := Canvas.new(image, Vector2i(0, 0), PROJECTILE_FRAME_SIZE)
+	# The saucer.
+	cup.ellipse(8, 12.5, 5.5, 1.5, c("car_white"))
+	cup.hline(4, 11, 13, c("chrome"))
+	# The glass, full of tea, with a shine down its left side.
+	cup.rect(5, 5, 6, 7, c("rose"))
+	cup.hline(5, 10, 4, c("car_white"))
+	cup.vline(5, 5, 11, c("chrome"))
+	cup.vline(10, 5, 11, c("chrome"))
+	cup.px(6, 6, c("gold_light"))
+	cup.px(6, 7, c("car_white"))
+	# The handle.
+	cup.px(11, 6, c("chrome"))
+	cup.vline(12, 7, 9, c("chrome"))
+	cup.px(11, 10, c("chrome"))
+	# Steam.
+	cup.px(7, 2, c("car_white"))
+	cup.px(9, 1, c("car_white"))
+	cup.outline(c("ink"))
 	return image
 
 

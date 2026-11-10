@@ -3,8 +3,6 @@ extends RefCounted
 ## A copy of a Run's state at one moment. The view draws from it and tests
 ## assert on it. Its fields can be written, but that only changes the copy,
 ## never the Run.
-##
-## Later tickets add cash, pickups and so on.
 
 ## Seconds of run time simulated so far (ticks × the fixed timestep).
 var time: float = 0.0
@@ -42,9 +40,24 @@ var outcome: Run.Outcome = Run.Outcome.NONE
 ## who took the last of her Patience: who she said yes to.
 var last_touching_type: StringName = &""
 
-## How much cash Shireen has collected so far, shown on the end screen.
-## Nothing drops cash yet, so it stays at 0 until ticket 07.
+## How much cash Shireen has collected so far in the run, shown on the end
+## screen. Spent cash counts too: it never goes down.
 var cash_collected: int = 0
+
+## Her weapon's level, from 1. Collecting cash raises it (see
+## [member level_cash]); ticket 08 adds the card choice at each level-up.
+var level: int = 1
+
+## The cash collected toward the next level so far, from 0 up to just under
+## [member level_cash_needed]. The HUD level bar is level_cash out of
+## level_cash_needed.
+var level_cash: int = 0
+
+## The cash the next level-up takes, from the leveling data.
+var level_cash_needed: int = 0
+
+## Every cash bill and cup of tea on the field, oldest first.
+var pickups: Array[PickupSnapshot] = []
 
 ## Every admirer on the field: first the ones chasing Shireen, in spawn
 ## order (oldest first), then the dazzled ones swooning or walking off, in
@@ -81,6 +94,10 @@ func to_dict() -> Dictionary[String, Variant]:
 		"last_touching_type": last_touching_type,
 		"admirers_dazzled": admirers_dazzled,
 		"cash_collected": cash_collected,
+		"level": level,
+		"level_cash": level_cash,
+		"level_cash_needed": level_cash_needed,
+		"pickups": pickups.map(func(pickup: PickupSnapshot) -> Dictionary: return pickup.to_dict()),
 		"admirer_count": admirer_count,
 		"admirers": admirers.map(func(admirer: AdmirerSnapshot) -> Dictionary: return admirer.to_dict()),
 		"weapon": weapon.to_dict() if weapon != null else {},

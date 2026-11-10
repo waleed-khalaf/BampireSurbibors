@@ -230,6 +230,6 @@ func test_the_state_dump_reports_patience_and_how_the_run_stands() -> void:
 	assert_str(ended["phase"]).is_equal("ended")
 	assert_str(ended["outcome"]).is_equal("defeat")
 	assert_str(ended["last_touching_type"]).is_equal("dowry_uncle")
-	# Nothing dazzles admirers or drops cash yet (tickets 06 and 07).
+	# This run has no weapon, so nobody was dazzled and no cash dropped.
 	assert_int(ended["admirers_dazzled"]).is_equal(0)
 	assert_int(ended["cash_collected"]).is_equal(0)

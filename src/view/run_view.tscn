@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://src/view/run_view.gd" id="1_runview"]
 [ext_resource type="Script" path="res://src/view/endless_sand.gd" id="2_sand"]
@@ -9,7 +9,8 @@
 [ext_resource type="Script" path="res://src/view/admirer_renderer.gd" id="7_admirers"]
 [ext_resource type="Script" path="res://src/view/projectile_renderer.gd" id="8_projectiles"]
 [ext_resource type="Script" path="res://src/view/heart_pop_renderer.gd" id="9_hearts"]
-[ext_resource type="Script" path="res://src/view/patience_bar.gd" id="8_patience"]
+[ext_resource type="Script" path="res://src/view/pickup_renderer.gd" id="10_pickups"]
+[ext_resource type="Script" path="res://src/view/hud_bar.gd" id="8_patience"]
 [ext_resource type="PackedScene" path="res://src/view/defeat_screen.tscn" id="9_defeat"]
 
 [node name="RunView" type="Node2D"]
@@ -27,6 +28,11 @@ y_sort_enabled = true
 unique_name_in_owner = true
 y_sort_enabled = true
 script = ExtResource("4_props")
+
+[node name="Pickups" type="Node2D" parent="World"]
+unique_name_in_owner = true
+y_sort_enabled = true
+script = ExtResource("10_pickups")
 
 [node name="Shireen" type="Sprite2D" parent="World"]
 unique_name_in_owner = true
@@ -53,6 +59,33 @@ script = ExtResource("9_hearts")
 unique_name_in_owner = true
 
 [node name="Hud" type="CanvasLayer" parent="."]
+
+[node name="LevelBar" type="Control" parent="Hud"]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 5.0
+grow_horizontal = 2
+script = ExtResource("8_patience")
+fill_color = Color(0.878, 0.663, 0.18, 1)
+
+[node name="LevelLabel" type="Label" parent="Hud"]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -88.0
+offset_top = 6.0
+offset_right = -8.0
+offset_bottom = 29.0
+grow_horizontal = 0
+theme_override_colors/font_color = Color(1, 0.882, 0.478, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+text = "Lv 1"
+horizontal_alignment = 2
 
 [node name="TimerLabel" type="Label" parent="Hud"]
 unique_name_in_owner = true

@@ -20,6 +20,8 @@ const ADMIRERS_DIR: String = "res://content/admirers"
 const SPAWN_RAMP_PATH: String = "res://content/spawn_ramp.tres"
 ## Every .tres file in this folder is one weapon.
 const WEAPONS_DIR: String = "res://content/weapons"
+const LEVELING_PATH: String = "res://content/leveling.tres"
+const PICKUPS_PATH: String = "res://content/pickups.tres"
 
 ## Behavior ID -> behavior class, for admirers. An admirer type's data names
 ## its behavior by one of these IDs. A new behavior class goes here.
@@ -65,18 +67,25 @@ var spawn_ramp: SpawnRampData
 ## test content may have none; a Run needs one only if its config picks one.
 var weapons: Dictionary[StringName, WeaponData] = {}
 
+## The leveling curve. Null only if its file could not be loaded.
+var leveling: LevelingData
+
+## How cash flies and karkadeh tea drops. Null only if its file could not be
+## loaded.
+var pickups: PickupData
+
 ## One readable message per problem found, empty if the content is valid.
 var errors: PackedStringArray = PackedStringArray()
 
 
 ## Loads the real game content.
 static func load_default() -> ContentRegistry:
-	return load_from(SHIREEN_PATH, ADMIRERS_DIR, SPAWN_RAMP_PATH, WEAPONS_DIR)
+	return load_from(SHIREEN_PATH, ADMIRERS_DIR, SPAWN_RAMP_PATH, WEAPONS_DIR, LEVELING_PATH, PICKUPS_PATH)
 
 
 ## Loads content from the given data files and validates it. Tests pass a
 ## broken file for one part and the real files for the rest.
-static func load_from(shireen_path: String, admirers_dir: String = ADMIRERS_DIR, spawn_ramp_path: String = SPAWN_RAMP_PATH, weapons_dir: String = WEAPONS_DIR) -> ContentRegistry:
+static func load_from(shireen_path: String, admirers_dir: String = ADMIRERS_DIR, spawn_ramp_path: String = SPAWN_RAMP_PATH, weapons_dir: String = WEAPONS_DIR, leveling_path: String = LEVELING_PATH, pickups_path: String = PICKUPS_PATH) -> ContentRegistry:
 	var registry := ContentRegistry.new()
 	registry.shireen = registry._load_file(shireen_path, "Shireen", ShireenData)
 
@@ -100,6 +109,9 @@ static func load_from(shireen_path: String, admirers_dir: String = ADMIRERS_DIR,
 		if weapon != null:
 			weapon_list.append(weapon)
 
+	registry.leveling = registry._load_file(leveling_path, "Leveling", LevelingData)
+	registry.pickups = registry._load_file(pickups_path, "Pickups", PickupData)
+
 	registry._add_admirers(admirer_types)
 	registry._add_weapons(weapon_list)
 	registry._validate()
@@ -108,11 +120,15 @@ static func load_from(shireen_path: String, admirers_dir: String = ADMIRERS_DIR,
 
 ## Wraps data that is already in memory and validates it. Tests use this to
 ## build small, purpose-built content sets. With no spawn ramp, no admirers
-## ever arrive; with no weapons, Shireen can't be given one.
-static func from_data(p_shireen: ShireenData, p_admirers: Array[AdmirerData] = [], p_spawn_ramp: SpawnRampData = null, p_weapons: Array[WeaponData] = []) -> ContentRegistry:
+## ever arrive; with no weapons, Shireen can't be given one. Leveling and
+## pickup data left out fall back to the defaults in their classes, which are
+## the design's numbers.
+static func from_data(p_shireen: ShireenData, p_admirers: Array[AdmirerData] = [], p_spawn_ramp: SpawnRampData = null, p_weapons: Array[WeaponData] = [], p_leveling: LevelingData = null, p_pickups: PickupData = null) -> ContentRegistry:
 	var registry := ContentRegistry.new()
 	registry.shireen = p_shireen
 	registry.spawn_ramp = p_spawn_ramp
+	registry.leveling = p_leveling if p_leveling != null else LevelingData.new()
+	registry.pickups = p_pickups if p_pickups != null else PickupData.new()
 	registry._add_admirers(p_admirers)
 	registry._add_weapons(p_weapons)
 	registry._validate()
@@ -223,6 +239,7 @@ func _validate() -> void:
 		_check_range("Shireen", "move_speed", shireen.move_speed, MIN_MOVE_SPEED, MAX_MOVE_SPEED, " px/s")
 		_check_range("Shireen", "max_patience", shireen.max_patience, 1.0, 10000.0, "")
 		_check_range("Shireen", "body_radius", shireen.body_radius, MIN_BODY_RADIUS, MAX_BODY_RADIUS, " px")
+		_check_range("Shireen", "pickup_radius", shireen.pickup_radius, 1.0, 200.0, " px")
 
 	for admirer: AdmirerData in admirers.values():
 		var label: String = "Admirer %s" % admirer.id
@@ -250,6 +267,15 @@ func _validate() -> void:
 
 	for weapon: WeaponData in weapons.values():
 		_validate_weapon(weapon)
+
+	if leveling != null:
+		_check_range("Leveling", "cash_for_first_level_up", leveling.cash_for_first_level_up, 1, 1000, "")
+		_check_range("Leveling", "extra_cash_each_level", leveling.extra_cash_each_level, 0, 1000, "")
+
+	if pickups != null:
+		_check_range("Pickups", "cash_fly_speed", pickups.cash_fly_speed, 50.0, 2000.0, " px/s")
+		_check_range("Pickups", "tea_drop_chance", pickups.tea_drop_chance, 0.0, 1.0, "")
+		_check_range("Pickups", "tea_patience", pickups.tea_patience, 1.0, 10000.0, "")
 
 
 func _validate_weapon(weapon: WeaponData) -> void:
