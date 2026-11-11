@@ -111,6 +111,12 @@ func step(delta: float, p_shireen_position: Vector2, p_shireen_facing: Vector2, 
 			_abilities[i].on_period(self)
 
 
+## One buff track's current rank, 0 until a buff card ranks it up.
+func buff_rank(track_id: StringName) -> int:
+	assert(_buff_ranks.has(track_id), "Weapon %s has no buff track called \"%s\"" % [data.id, track_id])
+	return _buff_ranks[track_id]
+
+
 ## Sets one buff track's rank and applies what that rank gives to the stats.
 func set_buff_rank(track_id: StringName, rank: int) -> void:
 	for track: BuffTrackData in data.buff_tracks:
@@ -120,6 +126,14 @@ func set_buff_rank(track_id: StringName, rank: int) -> void:
 			stats.set_modifiers("buff:%s" % track_id, track.modifiers, rank)
 			return
 	assert(false, "Weapon %s has no buff track called \"%s\"" % [data.id, track_id])
+
+
+## Whether the weapon has gained the ability with [param ability_id].
+func has_ability(ability_id: StringName) -> bool:
+	for ability: AbilityBehavior in _abilities:
+		if ability.data.id == ability_id:
+			return true
+	return false
 
 
 ## Adds an ability to the weapon: applies its stat modifiers and starts

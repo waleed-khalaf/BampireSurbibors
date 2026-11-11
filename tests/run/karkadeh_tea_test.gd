@@ -13,8 +13,13 @@ func _tea_run(tea_drop_chance: float, admirer: AdmirerData, count: int, weapon: 
 	return Run.new(RunConfig.new(content, rng_seed, play_area, &"zills"))
 
 
+## Stands still for [param ticks] steps. These tests are about tea, not
+## cards (tests/run/level_up_test.gd): at every level-up the first card is
+## taken, so the run goes on.
 func _stand(run: Run, ticks: int) -> void:
 	for i: int in ticks:
+		if run.snapshot().phase == Run.Phase.LEVEL_UP:
+			run.choose_card(0)
 		run.step(Run.TIMESTEP, Vector2.ZERO)
 
 

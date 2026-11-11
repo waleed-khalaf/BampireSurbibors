@@ -432,3 +432,38 @@ func test_a_missing_leveling_file_is_rejected_with_its_path() -> void:
 	assert_array(content.errors).contains_exactly([
 		"Leveling: no data file at %s." % MISSING_PATH,
 	])
+
+
+# --- Level-up cards (ticket 08) ---------------------------------------------
+
+func test_the_real_leveling_data_has_the_ability_levels_and_fallback_values_of_the_design() -> void:
+	# Design §5: abilities at 5, 10 and 15; Sip of tea restores 30 Patience.
+	var leveling: LevelingData = ContentRegistry.load_default().leveling
+
+	assert_array(leveling.ability_levels).contains_exactly([5, 10, 15])
+	assert_bool(leveling.is_ability_level(5)).is_true()
+	assert_bool(leveling.is_ability_level(6)).is_false()
+	assert_int(leveling.big_tip_cash).is_equal(10)
+	assert_float(leveling.sip_of_tea_patience).is_equal(30.0)
+
+
+func test_the_real_zills_buff_changes_all_have_words_for_their_cards() -> void:
+	# Spec story 32: every card says exactly what changes.
+	for track: BuffTrackData in ContentRegistry.load_default().weapons[&"zills"].buff_tracks:
+		for modifier: StatModifierData in track.modifiers:
+			assert_str(modifier.description).override_failure_message("Zills track %s has a change with no description" % track.id).is_not_empty()
+
+
+func test_leveling_data_with_an_ability_level_1_a_free_tip_and_a_dry_sip_is_rejected() -> void:
+	# Level 1 is where a run starts, so nothing could ever be offered there.
+	var leveling := TestContent.leveling(5, 3)
+	leveling.ability_levels = PackedInt32Array([1, 10])
+	leveling.big_tip_cash = 0
+	leveling.sip_of_tea_patience = 0.0
+	var content := ContentRegistry.from_data(TestContent.shireen_with_speed(90.0), [], null, [], leveling)
+
+	assert_array(content.errors).contains_exactly([
+		"Leveling: ability_levels must be between 2 and 100, but it is 1.",
+		"Leveling: big_tip_cash must be between 1 and 1000, but it is 0.",
+		"Leveling: sip_of_tea_patience must be between 1 and 10000, but it is 0.",
+	])

@@ -21,10 +21,30 @@ enum Kind {
 ## How much, per rank that grants it.
 @export var value: float = 0.0
 
+## What the level-up card says this change does, in the player's words:
+## "+1 zill", "+15% zill size". Left empty, the card falls back to the
+## numbers and the stat's name, like "+15% area" (see [method describe]).
+@export var description: String = ""
+
 ## In a buff track: the ranks that grant this change. Empty means every rank.
 ## "+1 zill at ranks 1, 3 and 5" lists 1, 3 and 5. An ability has no ranks,
 ## so leave it empty there; the content registry rejects anything else.
 @export var ranks: PackedInt32Array = PackedInt32Array()
+
+
+## The words for this change on a card: [member description], or, when
+## that is empty, the numbers: "+20% damage" for a share, "+1 pierce" for a
+## plain amount. Stat names are lower case with underscores, so "throw_rate"
+## would read "throw rate".
+func describe() -> String:
+	if description != "":
+		return description
+	var stat_words: String = String(stat).replace("_", " ")
+	if kind == Kind.MULTIPLY:
+		return "%+d%% %s" % [roundi(value * 100.0), stat_words]
+	if value == floorf(value):
+		return "%+d %s" % [int(value), stat_words]
+	return "%+.2f %s" % [value, stat_words]
 
 
 ## How many times a track at [param rank] has granted this change.

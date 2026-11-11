@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://src/view/run_view.gd" id="1_runview"]
 [ext_resource type="Script" path="res://src/view/endless_sand.gd" id="2_sand"]
@@ -11,6 +11,7 @@
 [ext_resource type="Script" path="res://src/view/heart_pop_renderer.gd" id="9_hearts"]
 [ext_resource type="Script" path="res://src/view/pickup_renderer.gd" id="10_pickups"]
 [ext_resource type="Script" path="res://src/view/hud_bar.gd" id="8_hud_bar"]
+[ext_resource type="PackedScene" path="res://src/view/level_up_screen.tscn" id="11_levelup"]
 [ext_resource type="PackedScene" path="res://src/view/defeat_screen.tscn" id="9_defeat"]
 
 [node name="RunView" type="Node2D"]
@@ -120,6 +121,9 @@ offset_bottom = -1.0
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
 text = "Patience"
+
+[node name="LevelUpScreen" parent="Hud" instance=ExtResource("11_levelup")]
+unique_name_in_owner = true
 
 [node name="DefeatScreen" parent="Hud" instance=ExtResource("9_defeat")]
 unique_name_in_owner = true

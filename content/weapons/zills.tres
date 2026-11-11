@@ -10,6 +10,7 @@ script = ExtResource("3_cx828")
 stat = &"damage"
 kind = 1
 value = 0.2
+description = "+20% damage"
 ranks = PackedInt32Array()
 
 [sub_resource type="Resource" id="Resource_53yaw"]
@@ -23,6 +24,7 @@ script = ExtResource("3_cx828")
 stat = &"rate"
 kind = 1
 value = 0.12
+description = "+12% throw rate"
 ranks = PackedInt32Array()
 
 [sub_resource type="Resource" id="Resource_hni4i"]
@@ -35,6 +37,7 @@ modifiers = Array[ExtResource("3_cx828")]([SubResource("Resource_i3n30")])
 script = ExtResource("3_cx828")
 stat = &"count"
 value = 1.0
+description = "+1 zill"
 ranks = PackedInt32Array(1, 3, 5)
 
 [sub_resource type="Resource" id="Resource_fw86r"]
@@ -42,6 +45,7 @@ script = ExtResource("3_cx828")
 stat = &"area"
 kind = 1
 value = 0.15
+description = "+15% zill size"
 ranks = PackedInt32Array(2, 4)
 
 [sub_resource type="Resource" id="Resource_1onvf"]
@@ -55,12 +59,14 @@ script = ExtResource("3_cx828")
 stat = &"speed"
 kind = 1
 value = 0.1
+description = "+10% zill speed"
 ranks = PackedInt32Array()
 
 [sub_resource type="Resource" id="Resource_r2tx7"]
 script = ExtResource("3_cx828")
 stat = &"pierce"
 value = 1.0
+description = "+1 pierce"
 ranks = PackedInt32Array()
 
 [sub_resource type="Resource" id="Resource_aurta"]

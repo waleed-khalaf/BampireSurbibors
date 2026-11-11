@@ -271,6 +271,10 @@ func _validate() -> void:
 	if leveling != null:
 		_check_range("Leveling", "cash_for_first_level_up", leveling.cash_for_first_level_up, 1, 1000, "")
 		_check_range("Leveling", "extra_cash_each_level", leveling.extra_cash_each_level, 0, 1000, "")
+		for level: int in leveling.ability_levels:
+			_check_range("Leveling", "ability_levels", level, 2, 100, "")
+		_check_range("Leveling", "big_tip_cash", leveling.big_tip_cash, 1, 1000, "")
+		_check_range("Leveling", "sip_of_tea_patience", leveling.sip_of_tea_patience, 1.0, 10000.0, "")
 
 	if pickups != null:
 		_check_range("Pickups", "cash_fly_speed", pickups.cash_fly_speed, 50.0, 2000.0, " px/s")
