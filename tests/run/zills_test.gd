@@ -438,6 +438,10 @@ func test_a_zills_run_replays_identically_from_its_seed_and_inputs() -> void:
 		@warning_ignore("integer_division")
 		var direction: Vector2 = directions[(i / 45) % directions.size()]
 		for run: Run in runs:
+			# Cash from the dazzles levels the Zills up along the way: take
+			# the first card each time (the cards are level_up_test.gd's).
+			if run.snapshot().phase == Run.Phase.LEVEL_UP:
+				run.choose_card(0)
 			run.step(Run.TIMESTEP, direction)
 		assert_dict(runs[1].snapshot().to_dict()).is_equal(runs[0].snapshot().to_dict())
 

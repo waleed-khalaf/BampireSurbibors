@@ -12,7 +12,9 @@ Domain terms for *Habibi, Get Closer*. Use these words in code, issues and docs.
 | **Drain** | Patience lost per second while an admirer touches Shireen. | contact damage |
 | **Touching** | An admirer whose body circle is against Shireen's (within a pixel). Only touching admirers drain Patience. The **last-touching** type is the admirer type that took the last of her Patience; she appears next to him in the wedding photo. | colliding, hitting |
 | **Cash** | XP pickups dropped by dazzled admirers. Fills the level bar. | XP gems, exp |
-| **Level-up** | A pause showing 3 cards for the run's weapon. | |
+| **Level-up** | A pause showing up to 3 cards for the run's weapon. The player picks one with the arrow keys and Enter. Level-ups gained at once are offered one after another. | |
+| **Card** | One choice on the level-up screen: a buff, an ability, or a fallback (Big tip, Sip of tea). | option, upgrade card |
+| **Big tip** / **Sip of tea** | The fallback cards offered once every buff track is maxed: bonus cash, and 30 Patience back. | |
 | **Weapon** | One of 5 dance moves: Zills, Hip Shimmy, Veil Twirl, Assaya Cane, Darbuka Drop. Chosen at the start; exactly one per run. | attack, skill |
 | **Buff** | A level-up card that adds a rank (1–5) to one of the weapon's four stat tracks. | upgrade (too vague) |
 | **Ability** | A level-up card offered at levels 5, 10 and 15 that adds a new behavior to the weapon. Each weapon has 5; a run takes 3. | evolution, perk |

@@ -6,3 +6,6 @@
 script = ExtResource("1_leveling")
 cash_for_first_level_up = 5
 extra_cash_each_level = 3
+ability_levels = PackedInt32Array(5, 10, 15)
+big_tip_cash = 10
+sip_of_tea_patience = 30.0

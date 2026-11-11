@@ -29,7 +29,7 @@ var patience: float = 0.0
 ## at this value.
 var max_patience: float = 0.0
 
-## Whether the run is still being played or is over.
+## Whether the run is being played, paused on level-up cards, or over.
 var phase: Run.Phase = Run.Phase.PLAYING
 
 ## How the run ended, or NONE while it is still being played.
@@ -45,7 +45,7 @@ var last_touching_type: StringName = &""
 var cash_collected: int = 0
 
 ## Her weapon's level, from 1. Collecting cash raises it (see
-## [member level_cash]); ticket 08 adds the card choice at each level-up.
+## [member level_cash]), and each level-up pauses the run on [member cards].
 var level: int = 1
 
 ## The cash collected toward the next level so far, from 0 up to just under
@@ -55,6 +55,19 @@ var level_cash: int = 0
 
 ## The cash the next level-up takes, from the leveling data.
 var level_cash_needed: int = 0
+
+## The level-up cards up right now, in the order the player sees them, or
+## empty unless [member phase] is LEVEL_UP. Pick one with Run.choose_card and
+## its index here.
+var cards: Array[Card] = []
+
+## The level [member cards] are for, or 0 with none up. Below [member level]
+## when more level-ups wait behind this one.
+var cards_level: int = 0
+
+## How many more level-ups wait for their own cards once these are chosen.
+## A big bill can be worth several levels at once (design §5).
+var pending_level_ups: int = 0
 
 ## Every cash bill and cup of tea on the field, oldest first.
 var pickups: Array[PickupSnapshot] = []
@@ -97,6 +110,9 @@ func to_dict() -> Dictionary[String, Variant]:
 		"level": level,
 		"level_cash": level_cash,
 		"level_cash_needed": level_cash_needed,
+		"cards": cards.map(func(card: Card) -> Dictionary: return card.to_dict()),
+		"cards_level": cards_level,
+		"pending_level_ups": pending_level_ups,
 		"pickups": pickups.map(func(pickup: PickupSnapshot) -> Dictionary: return pickup.to_dict()),
 		"admirer_count": admirer_count,
 		"admirers": admirers.map(func(admirer: AdmirerSnapshot) -> Dictionary: return admirer.to_dict()),

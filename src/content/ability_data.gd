@@ -10,6 +10,10 @@ extends Resource
 ## The name on the ability card, like "Ricochet".
 @export var display_name: String = ""
 
+## What the card says the ability does, like "Zills bounce between up to 3
+## admirers".
+@export var description: String = ""
+
 ## Which behavior class gives it its logic, by ID. The content registry maps
 ## IDs to classes (ContentRegistry.ABILITY_BEHAVIORS) and rejects unknown
 ## IDs. See AbilityBehavior for the hooks an ability can use.

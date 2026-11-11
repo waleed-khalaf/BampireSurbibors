@@ -5,8 +5,9 @@ extends Node2D
 ## Run's snapshot: Shireen, the admirers, her zills in flight, the hearts
 ## over dazzled admirers, the cash and tea on the sand, the sand and props
 ## around them, the run timer, the Patience bar and the level bar. When the
-## Run reports that it ended, it freezes the picture, shows the "You said
-## yes." screen and starts a new run on Enter.
+## Run pauses on a level-up, it shows the card screen and hands the pick
+## back to the Run. When the Run reports that it ended, it freezes the
+## picture, shows the "You said yes." screen and starts a new run on Enter.
 
 ## If a frame takes very long (a hitch, the window being dragged), don't try to
 ## catch up with hundreds of steps at once; drop the excess time instead.
@@ -17,6 +18,8 @@ const WEAPON_ID: StringName = &"zills"
 
 var _run: Run
 var _rng_seed: int
+## The weapon's display name, for the level-up screen's title.
+var _weapon_name: String
 ## Real time received from the engine that hasn't been simulated yet.
 var _accumulator: float = 0.0
 ## The latest snapshot, and the one a step before it. Drawing blends between
@@ -36,6 +39,7 @@ var _previous: RunSnapshot
 @onready var _patience_bar: HudBar = %PatienceBar
 @onready var _level_bar: HudBar = %LevelBar
 @onready var _level_label: Label = %LevelLabel
+@onready var _level_up_screen: LevelUpScreen = %LevelUpScreen
 @onready var _defeat_screen: DefeatScreen = %DefeatScreen
 @onready var _error_label: Label = %ErrorLabel
 
@@ -51,11 +55,13 @@ func _ready() -> void:
 	# reproducible, so the debug capture records it.
 	_rng_seed = randi()
 	_run = Run.new(RunConfig.new(content, _rng_seed, play_area, WEAPON_ID))
+	_weapon_name = content.weapons[WEAPON_ID].display_name
 	_snapshot = _run.snapshot()
 	_previous = _snapshot
 	_sand.view_size = play_area
 	_props.view_size = play_area
 	DebugCapture.register_provider("Run", _debug_state)
+	_level_up_screen.card_chosen.connect(_on_card_chosen)
 	_defeat_screen.restart_requested.connect(_restart)
 	_render(0.0)
 
@@ -76,6 +82,15 @@ func _debug_state() -> Dictionary:
 
 
 func _process(delta: float) -> void:
+	# While the cards are up the Run is paused: the view stops calling step
+	# (ADR-0001) and drops the time, so the run doesn't lurch to catch up
+	# when the pick is made.
+	if _snapshot.phase == Run.Phase.LEVEL_UP:
+		_accumulator = 0.0
+		# No frame time for the animations either: the crowd stands frozen
+		# behind the cards.
+		_render(0.0)
+		return
 	_accumulator += delta
 	var steps: int = 0
 	while _accumulator >= Run.TIMESTEP and steps < MAX_STEPS_PER_FRAME:
@@ -84,10 +99,9 @@ func _process(delta: float) -> void:
 		_snapshot = _run.snapshot()
 		_accumulator -= Run.TIMESTEP
 		steps += 1
-		for event: RunEvent in events:
-			if event is RunEndedEvent:
-				# This empties the accumulator, which ends the loop.
-				_on_run_ended()
+		# Ending the run or putting cards up empties the accumulator, which
+		# ends this loop.
+		_react_to(events)
 	if steps == MAX_STEPS_PER_FRAME:
 		_accumulator = minf(_accumulator, Run.TIMESTEP)
 	_render(delta)
@@ -112,6 +126,34 @@ func _render(delta: float) -> void:
 	_patience_bar.show_amount(_snapshot.patience, _snapshot.max_patience)
 	_level_bar.show_amount(_snapshot.level_cash, _snapshot.level_cash_needed)
 	_level_label.text = "Lv %d" % _snapshot.level
+
+
+## Shows the screens the Run's events call for.
+func _react_to(events: Array[RunEvent]) -> void:
+	for event: RunEvent in events:
+		if event is RunEndedEvent:
+			_on_run_ended()
+		elif event is CardsOfferedEvent:
+			_on_cards_offered()
+
+
+## The Run has paused on level-up cards: show them. Everything else stays
+## on screen behind the cards, frozen on the step that leveled up.
+func _on_cards_offered() -> void:
+	_accumulator = 0.0
+	_previous = _snapshot
+	_level_up_screen.show_cards(_snapshot, _weapon_name)
+
+
+## Enter on a card: the Run applies it and either goes on playing or puts up
+## the cards for the next level-up waiting behind this one.
+func _on_card_chosen(index: int) -> void:
+	var events: Array[RunEvent] = _run.choose_card(index)
+	_snapshot = _run.snapshot()
+	_previous = _snapshot
+	_level_up_screen.hide_cards()
+	_react_to(events)
+	_render(0.0)
 
 
 ## The run is over. Called from inside _process, so this frame still draws

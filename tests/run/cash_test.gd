@@ -12,11 +12,29 @@ func _zills_run(content: ContentRegistry, rng_seed: int, play_area: Vector2 = Ru
 	return Run.new(RunConfig.new(content, rng_seed, play_area, &"zills"))
 
 
+## Stands still for [param ticks] steps, taking a card at every level-up so
+## the run goes on (see [method _take_a_card_if_offered]).
 func _stand(run: Run, ticks: int) -> Array[RunEvent]:
 	var events: Array[RunEvent] = []
 	for i: int in ticks:
+		_take_a_card_if_offered(run)
 		events.append_array(run.step(Run.TIMESTEP, Vector2.ZERO))
 	return events
+
+
+## These tests are about cash, not cards (tests/run/level_up_test.gd): when
+## the run pauses on a level-up, take the first card that isn't Count, so
+## the one-hit Zills keep dazzling one Uncle a throw and the cash arrives
+## at a steady pace.
+func _take_a_card_if_offered(run: Run) -> void:
+	var snapshot := run.snapshot()
+	if snapshot.phase != Run.Phase.LEVEL_UP:
+		return
+	for i: int in snapshot.cards.size():
+		if snapshot.cards[i].id != &"count":
+			run.choose_card(i)
+			return
+	run.choose_card(0)
 
 
 ## The admirer with [param id] in [param snapshot], or null once he's gone.
@@ -225,6 +243,7 @@ func test_cash_fills_the_level_bar_along_the_design_curve() -> void:
 	var previous_level: int = 1
 
 	for i: int in 30 * Run.STEPS_PER_SECOND:
+		_take_a_card_if_offered(run)
 		var events := run.step(Run.TIMESTEP, Vector2.ZERO)
 		var snapshot := run.snapshot()
 		var expected_level: int = 1
@@ -273,6 +292,7 @@ func test_the_leveling_curve_comes_from_data() -> void:
 	var run := _run_collecting_fast(10, TestContent.leveling(10, 0))
 
 	for i: int in 10 * Run.STEPS_PER_SECOND:
+		_take_a_card_if_offered(run)
 		run.step(Run.TIMESTEP, Vector2.ZERO)
 		if run.snapshot().cash_collected >= 30:
 			break
@@ -293,6 +313,8 @@ func test_the_same_seed_drops_and_collects_the_same_cash() -> void:
 	var saw_a_pickup: bool = false
 
 	for i: int in 5 * Run.STEPS_PER_SECOND:
+		_take_a_card_if_offered(first)
+		_take_a_card_if_offered(second)
 		first.step(Run.TIMESTEP, Vector2.ZERO)
 		second.step(Run.TIMESTEP, Vector2.ZERO)
 		var snapshot: Dictionary = first.snapshot().to_dict()

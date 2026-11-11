@@ -12,10 +12,12 @@ extends RefCounted
 ##     var events := run.step(Run.TIMESTEP, Vector2.RIGHT)
 ##     print(run.snapshot().time)
 
-## Where a run is in its life. The level-up and lamp pauses join in later
-## tickets.
+## Where a run is in its life. The lamp pause joins in ticket 20.
 enum Phase {
 	PLAYING,
+	## Paused with level-up cards up: steps do nothing until
+	## [method choose_card].
+	LEVEL_UP,
 	## Over for good: steps do nothing any more.
 	ENDED,
 }
@@ -69,6 +71,17 @@ var _level: int = 1
 ## The cash collected toward the next level, the level bar's fill.
 var _level_cash: int = 0
 
+## Makes the cards for each level-up. Null when the run has no weapon: then
+## level-ups pass without a choice.
+var _card_generator: CardGenerator
+## The cards up right now, empty unless the phase is LEVEL_UP, and the
+## level they are for (0 with none up).
+var _cards: Array[Card] = []
+var _cards_level: int = 0
+## The levels reached whose cards haven't been offered yet, lowest first.
+## A big bill can be worth several levels, and each gets its own choice.
+var _pending_level_ups: Array[int] = []
+
 
 func _init(config: RunConfig) -> void:
 	assert(config.play_area.x > 0.0 and config.play_area.y > 0.0, "Run: play_area must be positive")
@@ -97,6 +110,7 @@ func _init(config: RunConfig) -> void:
 		_weapon = content.create_weapon_behavior(content.weapons[config.weapon_id])
 		for track_id: StringName in config.starting_buff_ranks:
 			_weapon.set_buff_rank(track_id, config.starting_buff_ranks[track_id])
+		_card_generator = CardGenerator.new(_weapon, _leveling, _rng)
 
 
 ## Advances the run by one fixed step and returns what happened during it,
@@ -108,7 +122,9 @@ func step(delta: float, move_direction: Vector2) -> Array[RunEvent]:
 	var events: Array[RunEvent] = []
 	# An ended run stays exactly as it ended: the clock, Shireen and the
 	# crowd all stop, so the end screen's numbers can't change under it.
-	if _phase == Phase.ENDED:
+	# A run with cards up waits the same way: the player has all the time
+	# they want to choose (spec story 29).
+	if _phase != Phase.PLAYING:
 		return events
 	_tick += 1
 	_move_shireen(delta, move_direction)
@@ -126,11 +142,49 @@ func step(delta: float, move_direction: Vector2) -> Array[RunEvent]:
 	if _patience <= 0.0:
 		_phase = Phase.ENDED
 		_outcome = Outcome.DEFEAT
+		# A level gained in the same step gets no cards: the run is over.
+		_pending_level_ups.clear()
 		events.append(RunEndedEvent.new(_outcome, _last_touching_type))
 		return events
 	# Spawn last, so a new admirer shows up exactly where the director put
 	# him, just off-screen, before he takes his first step.
 	_spawn_admirers(delta)
+	# The step that leveled up finishes in full, then the run pauses on the
+	# cards. Everything else in it already happened, so what the screen
+	# freezes on is a whole step.
+	if not _pending_level_ups.is_empty():
+		_offer_cards(events)
+	return events
+
+
+## Picks the card at [param index] among the ones up (see
+## [member RunSnapshot.cards]) and applies it. Only while the phase is
+## LEVEL_UP. The run goes back to playing, or straight on to the cards for
+## the next level-up waiting behind this one; the events returned say which.
+func choose_card(index: int) -> Array[RunEvent]:
+	assert(_phase == Phase.LEVEL_UP, "Run.choose_card: no cards are up")
+	assert(index >= 0 and index < _cards.size(), "Run.choose_card: there is no card %d, only %d cards are up" % [index, _cards.size()])
+	var events: Array[RunEvent] = []
+	var card: Card = _cards[index]
+	_cards = []
+	_cards_level = 0
+	match card.kind:
+		Card.Kind.BUFF:
+			_weapon.set_buff_rank(card.id, card.rank)
+		Card.Kind.ABILITY:
+			for ability: AbilityData in _weapon.data.abilities:
+				if ability.id == card.id:
+					_weapon.gain_ability(ability, _config.content.create_ability_behavior(ability))
+		Card.Kind.BIG_TIP:
+			# Cash like any other: it fills the level bar, and a tip worth a
+			# level queues another level-up, with its own cards.
+			_collect_cash(_leveling.big_tip_cash, events)
+		Card.Kind.SIP_OF_TEA:
+			_patience = minf(_patience + _leveling.sip_of_tea_patience, _max_patience)
+	if _pending_level_ups.is_empty():
+		_phase = Phase.PLAYING
+	else:
+		_offer_cards(events)
 	return events
 
 
@@ -170,6 +224,10 @@ func snapshot() -> RunSnapshot:
 	snap.level = _level
 	snap.level_cash = _level_cash
 	snap.level_cash_needed = _leveling.cash_to_level_up_from(_level)
+	for card: Card in _cards:
+		snap.cards.append(card.copy())
+	snap.cards_level = _cards_level
+	snap.pending_level_ups = _pending_level_ups.size()
 	for pickup: Pickup in _pickups.pickups:
 		var copy := PickupSnapshot.new()
 		copy.id = pickup.id
@@ -184,7 +242,7 @@ func snapshot() -> RunSnapshot:
 	return snap
 
 
-## "playing" or "ended", for debug dumps.
+## "playing", "level_up" or "ended", for debug dumps.
 static func phase_name(phase: Phase) -> String:
 	var key: String = Phase.find_key(phase)
 	return key.to_lower()
@@ -248,13 +306,34 @@ func _collect_pickups(delta: float, events: Array[RunEvent]) -> void:
 		if pickup.kind == Pickup.Kind.TEA:
 			_patience = minf(_patience + _pickup_data.tea_patience, _max_patience)
 		else:
-			_cash_collected += pickup.value
-			_level_cash += pickup.value
-			# A big bill can be worth several levels at once.
-			while _level_cash >= _leveling.cash_to_level_up_from(_level):
-				_level_cash -= _leveling.cash_to_level_up_from(_level)
-				_level += 1
-				events.append(LeveledUpEvent.new(_level))
+			_collect_cash(pickup.value, events)
+
+
+## Takes in [param cash]: it counts toward the run's total and the next
+## level, and each level-up it pays for is an event and, with a weapon to
+## buff, a card choice to come.
+func _collect_cash(cash: int, events: Array[RunEvent]) -> void:
+	_cash_collected += cash
+	_level_cash += cash
+	# A big bill can be worth several levels at once.
+	while _level_cash >= _leveling.cash_to_level_up_from(_level):
+		_level_cash -= _leveling.cash_to_level_up_from(_level)
+		_level += 1
+		events.append(LeveledUpEvent.new(_level))
+		if _card_generator != null:
+			_pending_level_ups.append(_level)
+
+
+## Pauses the run on the cards for the next waiting level-up.
+func _offer_cards(events: Array[RunEvent]) -> void:
+	_cards_level = _pending_level_ups.pop_front()
+	_cards = _card_generator.offer(_cards_level)
+	_phase = Phase.LEVEL_UP
+	# Copies, like the snapshot's: the view can't change the Run's cards.
+	var offered: Array[Card] = []
+	for card: Card in _cards:
+		offered.append(card.copy())
+	events.append(CardsOfferedEvent.new(_cards_level, offered))
 
 
 func _spawn_admirers(delta: float) -> void:
