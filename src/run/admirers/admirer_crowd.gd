@@ -57,6 +57,10 @@ var admirers: Array[Admirer] = []
 ## The dazzled admirers, swooning or walking off, in the order dazzled.
 var dazzled: Array[Admirer] = []
 
+## The admirers dazzled since the last [method step], in the order dazzled.
+## The Run reads it after the weapon has had its turn, to drop their cash.
+var dazzled_this_step: Array[Admirer] = []
+
 ## How many admirers have been dazzled this run.
 var dazzled_count: int = 0
 
@@ -109,6 +113,7 @@ func size() -> int:
 ## Moves every chasing admirer by his behavior, pushes the crowd apart and
 ## marks who ended up touching Shireen, then moves the dazzled ones along.
 func step(delta: float, shireen_position: Vector2) -> void:
+	dazzled_this_step.clear()
 	var count: int = admirers.size()
 	for i: int in count:
 		var admirer: Admirer = admirers[i]
@@ -195,6 +200,7 @@ func _dazzle(admirer: Admirer) -> void:
 	# However close he still stands, he no longer counts as touching her.
 	admirer.touching = false
 	dazzled.append(admirer)
+	dazzled_this_step.append(admirer)
 	dazzled_count += 1
 
 

@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="PickupData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/content/pickup_data.gd" id="1_pickups"]
+
+[resource]
+script = ExtResource("1_pickups")
+cash_fly_speed = 320.0
+tea_drop_chance = 0.01
+tea_patience = 30.0
+tea_radius = 5.0

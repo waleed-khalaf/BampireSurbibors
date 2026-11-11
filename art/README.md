@@ -62,6 +62,14 @@ Every projectile sheet has this layout: one row of 16×16 frames, centred on (8,
 
 One row of two 16×16 frames, both centred on **(8, 8)**: a small heart, then the full one. When an admirer is dazzled the small heart shows for a blink, then the full heart floats up over his head while he swoons (`src/view/heart_pop_renderer.gd`).
 
+### `pickups/cash.png`: cash, 48×16
+
+One row of three 16×16 frames, each centred on **(8, 8)**: one bill, a stack of two, and a fat wad with a gold band. The game picks the frame by how much the bill is worth (`src/view/pickup_renderer.gd`): 1 is a bill, 2 or 3 a stack, 4 or more a wad. Dazzled admirers drop these, and they fly to Shireen when she comes close.
+
+### `pickups/karkadeh_tea.png`: karkadeh tea, 16×16
+
+One 16×16 frame centred on **(8, 8)**: a glass of red hibiscus tea on a saucer. It drops rarely and stays on the sand until Shireen walks over it.
+
 ### `world/sand.png`: sand tile, 64×64
 
 Repeats forever in every direction, so anything that runs off one edge has to continue on the opposite edge. LibreSprite's **View > Tiled Mode** shows the repeats while you paint.

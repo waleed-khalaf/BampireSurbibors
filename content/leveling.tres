@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="LevelingData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/content/leveling_data.gd" id="1_leveling"]
+
+[resource]
+script = ExtResource("1_leveling")
+cash_for_first_level_up = 5
+extra_cash_each_level = 3

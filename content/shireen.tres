@@ -7,3 +7,4 @@ script = ExtResource("1_shireen")
 max_patience = 100.0
 move_speed = 90.0
 body_radius = 6.0
+pickup_radius = 24.0

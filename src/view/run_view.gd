@@ -3,9 +3,10 @@ extends Node2D
 ## The view for one Run. It holds no gameplay rules: it owns a Run, turns real
 ## frame time into fixed 60 Hz steps, feeds in keyboard input and draws the
 ## Run's snapshot: Shireen, the admirers, her zills in flight, the hearts
-## over dazzled admirers, the sand and props around them, the run timer and
-## the Patience bar. When the Run reports that it ended, it freezes the
-## picture, shows the "You said yes." screen and starts a new run on Enter.
+## over dazzled admirers, the cash and tea on the sand, the sand and props
+## around them, the run timer, the Patience bar and the level bar. When the
+## Run reports that it ended, it freezes the picture, shows the "You said
+## yes." screen and starts a new run on Enter.
 
 ## If a frame takes very long (a hitch, the window being dragged), don't try to
 ## catch up with hundreds of steps at once; drop the excess time instead.
@@ -29,9 +30,12 @@ var _previous: RunSnapshot
 @onready var _admirers: AdmirerRenderer = %Admirers
 @onready var _projectiles: ProjectileRenderer = %Projectiles
 @onready var _heart_pops: HeartPopRenderer = %HeartPops
+@onready var _pickups: PickupRenderer = %Pickups
 @onready var _camera: Camera2D = %Camera
 @onready var _timer_label: Label = %TimerLabel
-@onready var _patience_bar: PatienceBar = %PatienceBar
+@onready var _patience_bar: HudBar = %PatienceBar
+@onready var _level_bar: HudBar = %LevelBar
+@onready var _level_label: Label = %LevelLabel
 @onready var _defeat_screen: DefeatScreen = %DefeatScreen
 @onready var _error_label: Label = %ErrorLabel
 
@@ -101,10 +105,13 @@ func _render(delta: float) -> void:
 	_admirers.show_admirers(_snapshot, _previous, blend, delta)
 	_projectiles.show_projectiles(_snapshot, _previous, blend, delta)
 	_heart_pops.show_hearts(_snapshot)
+	_pickups.show_pickups(_snapshot, _previous, blend)
 	_sand.follow(shown)
 	_props.follow(shown)
 	_timer_label.text = format_run_time(_snapshot.time)
-	_patience_bar.show_patience(_snapshot.patience, _snapshot.max_patience)
+	_patience_bar.show_amount(_snapshot.patience, _snapshot.max_patience)
+	_level_bar.show_amount(_snapshot.level_cash, _snapshot.level_cash_needed)
+	_level_label.text = "Lv %d" % _snapshot.level
 
 
 ## The run is over. Called from inside _process, so this frame still draws
@@ -142,6 +149,8 @@ func _stop_with_content_errors(content: ContentRegistry) -> void:
 	_error_label.visible = true
 	_timer_label.visible = false
 	_patience_bar.visible = false
+	_level_bar.visible = false
+	_level_label.visible = false
 	_shireen.visible = false
 	set_process(false)
 

@@ -59,6 +59,16 @@ var _last_admirer_id: int = 0
 ## The run's one weapon. Null when the config picks none (some tests).
 var _weapon: WeaponBehavior
 
+## The cash and tea on the sand, and the pool their records come from.
+var _pickups: PickupField
+var _pickup_data: PickupData
+var _leveling: LevelingData
+## All the cash she has collected this run, for the end screen.
+var _cash_collected: int = 0
+var _level: int = 1
+## The cash collected toward the next level, the level bar's fill.
+var _level_cash: int = 0
+
 
 func _init(config: RunConfig) -> void:
 	assert(config.play_area.x > 0.0 and config.play_area.y > 0.0, "Run: play_area must be positive")
@@ -68,8 +78,12 @@ func _init(config: RunConfig) -> void:
 	_shireen_speed = content.shireen.move_speed
 	_max_patience = content.shireen.max_patience
 	_patience = _max_patience
-	# The Run's private RNG. Every random choice (where admirers spawn, later
-	# card offers and lamp rolls) draws from it, so a seed replays a whole run.
+	_pickup_data = content.pickups
+	_leveling = content.leveling
+	_pickups = PickupField.new(content.shireen.body_radius, content.shireen.pickup_radius, _pickup_data.cash_fly_speed, _pickup_data.tea_radius)
+	# The Run's private RNG. Every random choice (where admirers spawn, tea
+	# drops, later card offers and lamp rolls) draws from it, so a seed
+	# replays a whole run.
 	_rng = RandomNumberGenerator.new()
 	_rng.seed = config.rng_seed
 
@@ -104,6 +118,10 @@ func step(delta: float, move_direction: Vector2) -> Array[RunEvent]:
 	# nothing more.
 	if _weapon != null:
 		_weapon.step(delta, _shireen_position, _shireen_facing, _crowd)
+	_drop_from_dazzled()
+	# Pickups before the drain, so a cup of tea picked up in the step her
+	# Patience would have run out saves her.
+	_collect_pickups(delta, events)
 	_drain_patience(delta)
 	if _patience <= 0.0:
 		_phase = Phase.ENDED
@@ -148,6 +166,18 @@ func snapshot() -> RunSnapshot:
 			snap.admirers.append(copy)
 	snap.admirer_count = _crowd.size()
 	snap.admirers_dazzled = _crowd.dazzled_count
+	snap.cash_collected = _cash_collected
+	snap.level = _level
+	snap.level_cash = _level_cash
+	snap.level_cash_needed = _leveling.cash_to_level_up_from(_level)
+	for pickup: Pickup in _pickups.pickups:
+		var copy := PickupSnapshot.new()
+		copy.id = pickup.id
+		copy.kind = pickup.kind
+		copy.position = pickup.position
+		copy.value = pickup.value
+		copy.state = pickup.state
+		snap.pickups.append(copy)
 	if _weapon != null:
 		snap.weapon = _weapon.snapshot()
 		_weapon.add_projectiles_to(snap.projectiles)
@@ -195,6 +225,36 @@ func _drain_patience(delta: float) -> void:
 		if _patience <= 0.0:
 			_patience = 0.0
 			return
+
+
+## Every admirer dazzled this step drops his cash where he stands (design
+## §7), and now and then a cup of karkadeh tea with it (design §4). An
+## admirer worth nothing drops no cash, but can still drop tea.
+func _drop_from_dazzled() -> void:
+	for admirer: Admirer in _crowd.dazzled_this_step:
+		if admirer.type.cash > 0:
+			_pickups.drop(Pickup.Kind.CASH, admirer.position, admirer.type.cash)
+		# One roll of the Run's RNG per dazzle, chance or no chance, so the
+		# tea data never changes where later admirers spawn for a seed.
+		if _rng.randf() < _pickup_data.tea_drop_chance:
+			_pickups.drop(Pickup.Kind.TEA, admirer.position, 0)
+
+
+## Moves the pickups and takes in what Shireen collected: cash fills the
+## level bar, each level-up being an event, and tea restores Patience.
+func _collect_pickups(delta: float, events: Array[RunEvent]) -> void:
+	_pickups.step(delta, _shireen_position)
+	for pickup: Pickup in _pickups.collected:
+		if pickup.kind == Pickup.Kind.TEA:
+			_patience = minf(_patience + _pickup_data.tea_patience, _max_patience)
+		else:
+			_cash_collected += pickup.value
+			_level_cash += pickup.value
+			# A big bill can be worth several levels at once.
+			while _level_cash >= _leveling.cash_to_level_up_from(_level):
+				_level_cash -= _leveling.cash_to_level_up_from(_level)
+				_level += 1
+				events.append(LeveledUpEvent.new(_level))
 
 
 func _spawn_admirers(delta: float) -> void:

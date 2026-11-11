@@ -20,7 +20,7 @@ Press **F5** in the editor (or the ▶ button at the top right).
 | Accept | Enter | Yes: starts a new run from the "You said yes." screen |
 | Pause | Esc | Ticket 09 (title, weapon select and pause) |
 
-The keys are all mapped already. For now Shireen walks around the endless sand while Dowry Uncles close in on her. Her **Zills** fly by themselves at the nearest Uncle every 1.2 seconds. Three hits **dazzle** him: he swoons with a heart popping over his head, then wanders off screen. Each Uncle touching her drains her **Patience** (the bar at the top left). When it runs out, the run ends on **"You said yes."** with a placeholder wedding photo and the run's stats, and Enter starts a new run.
+The keys are all mapped already. For now Shireen walks around the endless sand while Dowry Uncles close in on her. Her **Zills** fly by themselves at the nearest Uncle every 1.2 seconds. Three hits **dazzle** him: he swoons with a heart popping over his head, drops his **cash** and wanders off screen. Walk within 24 px of the cash and it flies to her, filling the gold **level bar** along the top of the screen; the level number is at the top right (the level-up cards come with ticket 08). Now and then a dazzled Uncle also drops a cup of **karkadeh tea**: walk over it to get 30 Patience back. Each Uncle touching her drains her **Patience** (the bar at the top left). When it runs out, the run ends on **"You said yes."** with a placeholder wedding photo and the run's stats, and Enter starts a new run.
 
 ## Report a bug
 
@@ -46,11 +46,11 @@ The sprites in `art/` are code-drawn drafts for you to refine in LibreSprite. [a
 
 ## Tune the game
 
-Tunable numbers live in Godot Resource files under `content/`. Double-click one in Godot's FileSystem panel and edit it in the Inspector. For example, `content/shireen.tres` holds Shireen's move speed and her Patience, `content/admirers/dowry_uncle.tres` how much Patience an Uncle drains per second, and `content/weapons/zills.tres` the Zills' numbers (damage, seconds between throws, pierce and so on) and what each rank of their four buff tracks adds. The game checks the content when it starts and shows a message saying what to fix if a value is out of range.
+Tunable numbers live in Godot Resource files under `content/`. Double-click one in Godot's FileSystem panel and edit it in the Inspector. For example, `content/shireen.tres` holds Shireen's move speed, her Patience and her cash pickup radius, `content/admirers/dowry_uncle.tres` how much Patience an Uncle drains per second and how much cash he drops, `content/weapons/zills.tres` the Zills' numbers (damage, seconds between throws, pierce and so on) and what each rank of their four buff tracks adds, `content/leveling.tres` how much cash each level-up takes, and `content/pickups.tres` how fast cash flies to her and how often karkadeh tea drops. The game checks the content when it starts and shows a message saying what to fix if a value is out of range.
 
 ## How the code is laid out
 
-- `src/run/`: the **Run simulation**. Every gameplay rule lives here as plain GDScript objects, with no nodes, input or clock, so it's deterministic and testable headless. See [ADR-0001](docs/adr/0001-run-simulation-seam.md). `src/run/weapons/` holds the weapon behaviors, the stat model they share and the hooks abilities use.
+- `src/run/`: the **Run simulation**. Every gameplay rule lives here as plain GDScript objects, with no nodes, input or clock, so it's deterministic and testable headless. See [ADR-0001](docs/adr/0001-run-simulation-seam.md). `src/run/weapons/` holds the weapon behaviors, the stat model they share and the hooks abilities use; `src/run/pickups/` the cash and tea on the sand and how Shireen collects them.
 - `src/content/`: the **content registry** and the data classes behind the files in `content/`. It loads and checks the content before a Run starts.
 - `src/view/`: the **view**, the Godot scenes that draw the Run and feed it keyboard input. They hold no rules.
 - `src/debug/`: the **debug capture** service (the `DebugCapture` autoload). Systems add their state to `state.txt` with `DebugCapture.register_provider("Section", callable)`; `DebugCapture.capture("reason")` saves a snapshot from code.

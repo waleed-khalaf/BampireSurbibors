@@ -47,6 +47,37 @@ static func shireen_with_patience(max_patience: float) -> ShireenData:
 	return shireen
 
 
+## The real Shireen with a chosen cash pickup radius.
+static func shireen_with_pickup_radius(pickup_radius: float) -> ShireenData:
+	var shireen: ShireenData = real().shireen.duplicate()
+	shireen.pickup_radius = pickup_radius
+	return shireen
+
+
+## A leveling curve of [param cash_for_first_level_up] + [param extra_cash_each_level]
+## per level after the first.
+static func leveling(cash_for_first_level_up: int, extra_cash_each_level: int) -> LevelingData:
+	var curve := LevelingData.new()
+	curve.cash_for_first_level_up = cash_for_first_level_up
+	curve.extra_cash_each_level = extra_cash_each_level
+	return curve
+
+
+## The real pickup numbers with a chosen karkadeh tea drop chance (0 to 1).
+static func pickups(tea_drop_chance: float) -> PickupData:
+	var data: PickupData = real().pickups.duplicate()
+	data.tea_drop_chance = tea_drop_chance
+	return data
+
+
+## The harmless Dowry Uncle (see [method harmless_uncle]), worth
+## [param cash] instead of his real 2: for tests about what a drop is worth.
+static func uncle_worth(cash: int) -> AdmirerData:
+	var uncle: AdmirerData = harmless_uncle()
+	uncle.cash = cash
+	return uncle
+
+
 ## A content set whose only difference from the defaults is Shireen's speed.
 ## No admirers arrive, so tests about walking aren't disturbed.
 static func with_shireen_speed(move_speed: float) -> ContentRegistry:
@@ -120,6 +151,13 @@ static func zills_with(base_stats: Dictionary[StringName, float]) -> WeaponData:
 	for stat: StringName in base_stats:
 		zills.base_stats[stat] = base_stats[stat]
 	return zills
+
+
+## The real Zills, except that one zill dazzles an Uncle (30 damage against
+## his 30 HP), thrown every [param cooldown] seconds: for tests about what a
+## dazzle brings rather than about the throwing.
+static func one_hit_zills(cooldown: float = 1.2) -> WeaponData:
+	return zills_with({&"damage": 30.0, &"cooldown": cooldown})
 
 
 ## A harmless Uncle (see [method harmless_uncle]) with so much HP that no test
